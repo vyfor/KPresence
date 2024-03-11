@@ -10,50 +10,49 @@ import me.blast.kpresence.rpc.*
 import platform.posix.close
 import platform.posix.getpid
 
+/**
+ * Manages client connections and activity updates for Discord presence.
+ * @property clientId The Discord application client ID.
+ */
 class Client(val clientId: Long) {
   var handle = -1
+    private set
   
+  /**
+   * Establishes a connection to Discord.
+   * @return The current Client instance for chaining.
+   */
   fun connect(): Client {
     handle = openPipe()
     handshake()
     return this
   }
   
+  /**
+   * Updates the current activity shown on Discord.
+   * @param activity The activity to display.
+   * @return The current Client instance for chaining.
+   */
   fun update(activity: Activity): Client {
-    writeBytes(
-      handle,
-      1,
-      Json.encodeToString(
-        Packet(
-          "SET_ACTIVITY",
-          PacketArgs(
-            getpid(),
-            activity
-          ),
-          "-"
-        )
-      )
-    )
+    val packet = Json.encodeToString(Packet("SET_ACTIVITY", PacketArgs(getpid(), activity), "-"))
+    writeBytes(handle, 1, packet)
     return this
   }
   
+  /**
+   * Clears the current activity shown on Discord.
+   * @return The current Client instance for chaining.
+   */
   fun clear(): Client {
-    writeBytes(handle,
-      1,
-      Json.encodeToString(
-        Packet(
-          "SET_ACTIVITY",
-          PacketArgs(
-            getpid(),
-            null
-          ),
-          "-"
-        )
-      )
-    )
+    val packet = Json.encodeToString(Packet("SET_ACTIVITY", PacketArgs(getpid(), null), "-"))
+    writeBytes(handle, 1, packet)
     return this
   }
   
+  /**
+   * Shuts down the connection to Discord and cleans up resources.
+   * @return The current Client instance for chaining.
+   */
   fun shutdown(): Client {
     clear()
     close(handle)
@@ -61,6 +60,9 @@ class Client(val clientId: Long) {
     return this
   }
   
+  /**
+   * Performs the initial handshake with Discord.
+   */
   private fun handshake() {
     writeBytes(handle, 0, "{\"v\": 1, \"client_id\": \"$clientId\"}")
   }
