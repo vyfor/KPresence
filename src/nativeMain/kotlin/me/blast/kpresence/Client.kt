@@ -20,9 +20,11 @@ class Client(val clientId: Long) {
   
   /**
    * Establishes a connection to Discord.
+   * Attempts to reconnect if there is an already active connection.
    * @return The current Client instance for chaining.
    */
   fun connect(): Client {
+    if (handle != -1) close(handle)
     handle = openPipe()
     handshake()
     return this
