@@ -18,4 +18,4 @@ internal fun Int.reverseBytes(): Int {
 }
 
 @OptIn(ExperimentalForeignApi::class)
-internal fun epochMillis(): Int = time(null).toInt()
+fun epochMillis(): Int = time(null).toInt()
