@@ -8,7 +8,6 @@
 
 ```gradle
 repositories {
-    ...
     maven("https://jitpack.io")
 }
 
