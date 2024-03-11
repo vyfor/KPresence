@@ -1,8 +1,8 @@
 pluginManagement {
     repositories {
-        mavenCentral()
         gradlePluginPortal()
+        mavenCentral()
     }
 }
 
-rootProject.name = "KPresence"
+rootProject.name = "kpresence"
