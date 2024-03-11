@@ -45,8 +45,8 @@ publishing {
             name = "GitHubPackages"
             setUrl("https://maven.pkg.github.com/reblast/KPresence")
             credentials {
-                username = project.findProperty("gpr.user") as String? ?: System.getenv("GITHUB_USER")
-                password = project.findProperty("gpr.key") as String? ?: System.getenv("GPR_KEY")
+                username = project.findProperty("gpr.user") as String? ?: System.getenv("GITHUB_ACTOR")
+                password = project.findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")
             }
         }
     }

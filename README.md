@@ -4,32 +4,20 @@
 
 ## ⚙️ Installation
 
-### Gradle
-
 ```gradle
 repositories {
-    maven("https://jitpack.io")
+    maven {
+        url = uri("https://maven.pkg.github.com/reblast/KPresence")
+        credentials {
+            username = project.findProperty("gpr.user") ?: System.getenv("GITHUB_ACTOR")
+            password = project.findProperty("gpr.key") ?: System.getenv("GITHUB_TOKEN")
+        }
+    }
 }
 
 dependencies {
-    implementation("com.github.reblast:KPresence:VERSION")
+    implementation("me.blast:kpresence-native:VERSION")
 }
-```
-
-### Maven
-```xml
-<repositories>
-    <repository>
-        <id>jitpack.io</id>
-        <url>https://jitpack.io</url>
-    </repository>
-</repositories>
-
-<dependency>
-    <groupId>com.github.reblast</groupId>
-    <artifactId>KPresence</artifactId>
-    <version>VERSION</version>
-</dependency>
 ```
 
 ## ✨ Examples
