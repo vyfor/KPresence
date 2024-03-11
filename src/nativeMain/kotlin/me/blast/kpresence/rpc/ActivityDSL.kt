@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 package me.blast.kpresence.rpc
 
 import me.blast.kpresence.epochMillis
