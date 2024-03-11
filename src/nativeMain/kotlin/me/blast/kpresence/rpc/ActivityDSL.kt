@@ -2,9 +2,6 @@ package me.blast.kpresence.rpc
 
 import me.blast.kpresence.epochMillis
 
-/**
- * Marks a class or method to be part of the Activity DSL.
- */
 @DslMarker
 annotation class ActivityDSL
 
@@ -36,7 +33,7 @@ class ActivityBuilder {
   var createdAt: Int = epochMillis()
   
   /**
-   * Unix timestamps for start and/or end of the game.
+   * Unix timestamps for start/end of the game.
    */
   var timestamps: ActivityTimestamps? = null
   
