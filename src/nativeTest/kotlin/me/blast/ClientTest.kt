@@ -13,8 +13,7 @@ class ClientTest {
     
     client.update(
       Activity(
-        state = "KPresence",
-        details = "hi"
+        state = "KPresence"
       )
     )
     println(readBytes(client.handle, 512).decodeToString())
