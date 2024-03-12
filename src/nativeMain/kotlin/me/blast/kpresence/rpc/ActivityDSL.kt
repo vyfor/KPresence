@@ -140,7 +140,7 @@ class ActivityBuilder {
    * @return The constructed Activity instance.
    */
   fun build(): Activity = Activity(
-    type, url, createdAt, timestamps, applicationId, details, state, emoji, party, assets, secrets, instance, flags, buttons.toTypedArray()
+    type, url, createdAt, timestamps, applicationId, details, state, emoji, party, assets, secrets, instance, flags, buttons.takeIf { it.isNotEmpty() }?.toTypedArray()
   )
 }
 
