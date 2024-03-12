@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "me.blast"
-version = "0.1.0"
+version = "0.1.2"
 
 repositories {
     mavenCentral()
@@ -31,6 +31,7 @@ kotlin {
         nativeMain.dependencies {
             implementation(kotlin("stdlib"))
             implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
         }
         
         nativeTest.dependencies {
@@ -56,7 +57,7 @@ publishing {
                 from(components["kotlinMultiplatform"])
                 groupId = "me.blast"
                 artifactId = "kpresence"
-                version = "0.1.0"
+                version = "0.1.2"
             }
         }
     }
