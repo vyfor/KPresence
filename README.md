@@ -22,7 +22,14 @@ dependencies {
 
 ## ✨ Examples
 ```kt
-val client = Client(CLIENT_ID).connect()
+val client = Client(CLIENT_ID)
+
+client.onMessage { message ->
+  println("Received message:")
+  println(message.decodeToString())
+}
+  
+client.connect()
 
 val activity = activity {
     type = ActivityType.GAME
