@@ -2,13 +2,15 @@
 
 package me.blast.kpresence
 
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import me.blast.kpresence.ipc.openPipe
 import me.blast.kpresence.ipc.writeBytes
 import me.blast.kpresence.rpc.*
-import platform.posix.close
-import platform.posix.getpid
+import kotlinx.cinterop.*
+import platform.posix.*
 
 /**
  * Manages client connections and activity updates for Discord presence.
@@ -18,15 +20,21 @@ class Client(val clientId: Long) {
   var handle = -1
     private set
   
+  private var onMessageCallback: (Client.(ByteArray) -> Unit)? = null
+  private var messageListener: Job? = null
+  
   /**
    * Establishes a connection to Discord.
    * Attempts to reconnect if there is an already active connection.
+   * @param callback The callback function to be executed after establishing the connection.
    * @return The current Client instance for chaining.
    */
-  fun connect(): Client {
+  fun connect(callback: (Client.() -> Unit)? = null): Client {
     if (handle != -1) close(handle)
     handle = openPipe()
+    listen()
     handshake()
+    callback?.invoke(this)
     return this
   }
   
@@ -57,9 +65,49 @@ class Client(val clientId: Long) {
    */
   fun shutdown(): Client {
     clear()
+    stopListening()
     close(handle)
     handle = -1
     return this
+  }
+
+  /**
+   * Sets a callback to be executed when a message is received.
+   * @param callback The code to be executed.
+   */
+  fun onMessage(callback: Client.(message: ByteArray) -> Unit): Client {
+    onMessageCallback = callback
+    return this
+  }
+
+  @OptIn(ExperimentalForeignApi::class)
+  private fun listen() {
+    val flow = flow {
+      val buffer = ByteArray(2048)
+      val bufferSize = buffer.size.toUInt()
+      while (true) {
+        val bytesRead = read(handle, buffer.refTo(0), bufferSize)
+        if (bytesRead == -1) {
+          perror("Error reading from pipe")
+          break
+        } else if (bytesRead == 0) {
+          continue
+        } else {
+          emit(buffer.copyOf(bytesRead))
+        }
+      }
+    }
+
+    messageListener = GlobalScope.launch {
+      flow.collect { message ->
+        onMessageCallback?.invoke(this@Client, message)
+      }
+    }
+  }
+
+  private fun stopListening() {
+    messageListener?.cancel()
+    messageListener = null
   }
   
   /**
