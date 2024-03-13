@@ -23,11 +23,6 @@ dependencies {
 ## ✨ Examples
 ```kt
 val client = Client(CLIENT_ID)
-
-client.onMessage { message ->
-  println("Received message:")
-  println(message.decodeToString())
-}
   
 client.connect()
 
@@ -37,8 +32,8 @@ val activity = activity {
     state = "Writing code"
     
     timestamps {
-        start = epochMillis() - 3600_000
-        end = epochMillis() + 3600_000
+        start = epochSeconds() - 3600
+        end = epochSeconds() + 3600
     }
     
     emoji {
