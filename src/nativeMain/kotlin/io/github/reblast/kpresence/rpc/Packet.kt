@@ -1,4 +1,4 @@
-package me.blast.kpresence.rpc
+package io.github.reblast.kpresence.rpc
 
 import kotlinx.serialization.Serializable
 
