@@ -1,11 +1,12 @@
 @file:Suppress("unused")
 
-package me.blast.kpresence.ipc
+package io.github.reblast.kpresence.ipc
 
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.UnsafeNumber
 import kotlinx.cinterop.refTo
-import me.blast.kpresence.putInt
-import me.blast.kpresence.reverseBytes
+import io.github.reblast.kpresence.utils.putInt
+import io.github.reblast.kpresence.utils.reverseBytes
 import platform.posix.*
 import kotlin.experimental.ExperimentalNativeApi
 
@@ -41,7 +42,7 @@ fun closePipe(handle: Int) {
   close(handle)
 }
 
-@OptIn(ExperimentalForeignApi::class)
+@OptIn(ExperimentalForeignApi::class, UnsafeNumber::class)
 fun writeBytes(handle: Int, opcode: Int, data: String): Int {
   if (handle == -1) throw IllegalStateException("Not connected")
   
@@ -55,12 +56,12 @@ fun writeBytes(handle: Int, opcode: Int, data: String): Int {
   return write(handle, buffer.refTo(0), buffer.size.toUInt())
 }
 
-@OptIn(ExperimentalForeignApi::class)
+@OptIn(ExperimentalForeignApi::class, UnsafeNumber::class)
 fun readBytes(handle: Int, bufferSize: Int = 4096): ByteArray {
   if (handle == -1) throw IllegalStateException("Not connected")
   
   val buffer = ByteArray(bufferSize)
-  read(handle, buffer.refTo(0), buffer.size.toUInt())
+  val bytesRead = read(handle, buffer.refTo(0), buffer.size.toUInt())
   
-  return buffer
+  return buffer.copyOf(bytesRead)
 }
