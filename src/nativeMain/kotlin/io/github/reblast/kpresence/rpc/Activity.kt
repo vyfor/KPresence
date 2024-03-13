@@ -1,6 +1,6 @@
 @file:Suppress("ArrayInDataClass", "unused")
 
-package me.blast.kpresence.rpc
+package io.github.reblast.kpresence.rpc
 
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
@@ -9,13 +9,11 @@ import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import me.blast.kpresence.epochMillis
 
 /**
  * Represents a user's activity on Discord.
  * @property type Activity type.
  * @property url Stream URL, is validated when type is [ActivityType.STREAMING].
- * @property createdAt Unix timestamp (in milliseconds) of when the activity was added to the user's session.
  * @property timestamps Unix timestamps for start and/or end of the game.
  * @property applicationId Application ID for the game.
  * @property details What the player is currently doing.
@@ -24,7 +22,7 @@ import me.blast.kpresence.epochMillis
  * @property party Information for the current party of the player.
  * @property assets Images for the presence and their hover texts.
  * @property secrets Secrets for Rich Presence joining and spectating.
- * @property instance Whether or not the activity is an instanced game session.
+ * @property instance Whether the activity is an instanced game session.
  * @property flags Activity flags.
  * @property buttons Custom buttons shown in the Rich Presence (max 2).
  */
@@ -32,8 +30,6 @@ import me.blast.kpresence.epochMillis
 data class Activity(
   val type: ActivityType = ActivityType.GAME,
   val url: String? = null,
-  @SerialName("created_at")
-  val createdAt: Int = epochMillis(),
   val timestamps: ActivityTimestamps? = null,
   @SerialName("application_id")
   val applicationId: Long? = null,
@@ -49,7 +45,7 @@ data class Activity(
 )
 
 /**
- * Represents the type of an activity.
+ * Represents the type of activity.
  * The [ActivityType.STREAMING] type currently only supports Twitch and YouTube. Only https://twitch.tv/ and https://youtube.com/ urls will work.
  * If set to [ActivityType.CUSTOM], emoji and state can be used for setting custom status.
  */
@@ -134,7 +130,7 @@ data class ActivitySecrets(
  * Represents the flags for an activity.
  * @property value The value of the flag.
  */
-enum class ActivityFlags(val value: UInt) {
+enum class ActivityFlags(private val value: UInt) {
   INSTANCE(1u),
   JOIN(1u shl 1),
   SPECTATE(1u shl 2),

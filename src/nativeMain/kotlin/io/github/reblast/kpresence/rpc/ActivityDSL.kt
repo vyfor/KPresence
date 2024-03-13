@@ -1,8 +1,6 @@
-@file:Suppress("unused")
+@file:Suppress("unused", "MemberVisibilityCanBePrivate")
 
-package me.blast.kpresence.rpc
-
-import me.blast.kpresence.epochMillis
+package io.github.reblast.kpresence.rpc
 
 @DslMarker
 annotation class ActivityDSL
@@ -28,11 +26,6 @@ class ActivityBuilder {
    * Stream URL, is validated when type is [ActivityType.STREAMING].
    */
   var url: String? = null
-  
-  /**
-   * Unix timestamp (in milliseconds) of when the activity was added to the user's session.
-   */
-  var createdAt: Int = epochMillis()
   
   /**
    * Unix timestamps for start/end of the game.
@@ -75,7 +68,7 @@ class ActivityBuilder {
   var secrets: ActivitySecrets? = null
   
   /**
-   * Whether or not the activity is an instanced game session.
+   * Whether the activity is an instanced game session.
    */
   var instance: Boolean? = null
   
@@ -140,7 +133,7 @@ class ActivityBuilder {
    * @return The constructed Activity instance.
    */
   fun build(): Activity = Activity(
-    type, url, createdAt, timestamps, applicationId, details, state, emoji, party, assets, secrets, instance, flags, buttons.takeIf { it.isNotEmpty() }?.toTypedArray()
+    type, url, timestamps, applicationId, details, state, emoji, party, assets, secrets, instance, flags, buttons.takeIf { it.isNotEmpty() }?.toTypedArray()
   )
 }
 
