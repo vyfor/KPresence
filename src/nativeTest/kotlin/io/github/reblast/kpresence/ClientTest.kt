@@ -3,6 +3,7 @@ package io.github.reblast.kpresence
 import io.github.reblast.kpresence.rpc.activity
 import io.github.reblast.kpresence.utils.epochMillis
 import platform.posix.sleep
+import kotlin.system.exitProcess
 import kotlin.test.Test
 
 class ClientTest {
@@ -32,7 +33,21 @@ class ClientTest {
       )
     }
     
-    sleep(15u)
+    while (true) {
+      readln().apply {
+        if (this == "shutdown") {
+          client.shutdown()
+          exitProcess(0)
+        }
+        
+        client.update(
+          activity {
+            state = this@apply
+            details = "KPresence"
+          }
+        )
+      }
+    }
   }
   
   @Test

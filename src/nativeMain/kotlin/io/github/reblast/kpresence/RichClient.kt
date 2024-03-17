@@ -23,10 +23,10 @@ class RichClient(val clientId: Long) {
   var handle = -1
     private set
   
-  private val clientScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+  private val clientScope = CoroutineScope(Dispatchers.IO)
+  private val updateInterval = 4000L
   private var lastActivity: Activity? = null
   private var lastUpdated = 0L
-  private val updateInterval = 4000L
   private var onMessageCallback: (RichClient.(ByteArray) -> Unit)? = null
   private var messageListener: Job? = null
   private var updateTimer: Job? = null
@@ -60,7 +60,6 @@ class RichClient(val clientId: Long) {
       lastUpdated = currentTime
     } else if (updateTimer?.isActive != true) {
       updateTimer = clientScope.launch {
-        println("UPDATE")
         delay(updateInterval - timeSinceLastUpdate)
         sendActivityUpdate()
         lastUpdated = epochMillis()

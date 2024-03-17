@@ -10,8 +10,8 @@ plugins {
     id("com.louiscad.complete-kotlin") version "1.1.0"
 }
 
-group = "me.blast"
-version = "0.2.0"
+group = "io.github.reblast"
+version = "0.2.1"
 
 repositories {
     mavenCentral()
@@ -19,15 +19,20 @@ repositories {
 
 kotlin {
     val targets = listOf(
-        mingwX64(),
-        linuxX64(),
         linuxArm64(),
+        linuxX64(),
+        macosArm64(),
         macosX64(),
-        macosArm64()
+        mingwX64()
     )
     
     sourceSets {
         val commonMain by getting
+        val linuxArm64Main by getting
+        val linuxX64Main by getting
+        val macosArm64Main by getting
+        val macosX64Main by getting
+        val mingwX64Main by getting
         val nativeMain by creating {
             dependsOn(commonMain)
             
@@ -71,21 +76,21 @@ val javadocJar = tasks.register<Jar>("javadocJar") {
 
 publishing {
     repositories {
-        maven {
-            name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/reblast/KPresence")
-            credentials {
-                username = project.findProperty("gpr.user") as String? ?: System.getenv("GITHUB_ACTOR")
-                password = project.findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")
-            }
-        }
+//        maven {
+//            name = "GitHubPackages"
+//            url = uri("https://maven.pkg.github.com/reblast/KPresence")
+//            credentials {
+//                username = project.findProperty("gpr.user") as String? ?: System.getenv("GITHUB_ACTOR")
+//                password = project.findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")
+//            }
+//        }
         
         maven {
             name = "OSS"
-            val releasesRepoUrl = uri("https://s01.oss.sonatype.org/service/local/staging/deployByRepositoryId/${project.findProperty("sonatype.repository")}/")
-            val snapshotsRepoUrl = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
+            val releasesRepoUrl = uri("https://oss.sonatype.org/service/local/staging/deployByRepositoryId/${project.findProperty("sonatype.repository")}/")
+            val snapshotsRepoUrl = uri("https://oss.sonatype.org/content/repositories/snapshots/")
             url = if (version.toString().endsWith("SNAPSHOT")) snapshotsRepoUrl else releasesRepoUrl
-            
+
             credentials {
                 username = project.findProperty("sonatype.username") as String? ?: System.getenv("SONATYPE_USERNAME")
                 password = project.findProperty("sonatype.password") as String? ?: System.getenv("SONATYPE_PASSWORD")
@@ -96,10 +101,7 @@ publishing {
     publications {
         withType<MavenPublication> {
             artifact(javadocJar)
-            
             pom {
-                groupId = "me.blast"
-                artifactId = "kpresence"
                 version = project.version.toString()
                 name.set("KPresence")
                 description.set("A lightweight, cross-platform Kotlin library for Discord Rich Presence interaction.")
@@ -109,6 +111,10 @@ publishing {
                         name.set("MIT License")
                         url.set("https://opensource.org/licenses/MIT")
                     }
+                }
+                issueManagement {
+                    system.set("Github")
+                    url.set("https://github.com/reblast/KPresence/issues")
                 }
                 developers {
                     developer {
@@ -133,4 +139,9 @@ signing {
         project.findProperty("gpg.password") as String? ?: System.getenv("GPG_PRIVATE_PASSWORD")
     )
     sign(publishing.publications)
+}
+
+tasks.withType<AbstractPublishToMaven>().configureEach {
+    val signingTasks = tasks.withType<Sign>()
+    mustRunAfter(signingTasks)
 }

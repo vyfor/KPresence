@@ -16,13 +16,13 @@ repositories {
 }
 
 dependencies {
-    implementation("me.blast:kpresence-native:VERSION")
+    implementation("me.blast:kpresence:VERSION")
 }
 ```
 
 ## ✨ Examples
 ```kt
-val client = Client(CLIENT_ID)
+val client = RichClient(CLIENT_ID)
   
 client.connect()
 
