@@ -1,22 +1,18 @@
 # 🧩 KPresence
 
-**📦 A lightweight, cross-platform [Kotlin](https://kotlinlang.org/) library for Discord Rich Presence interaction.**
+**📦 A lightweight, cross-platform [Kotlin/Native](https://kotlinlang.org/docs/native-overview.html) library for interacting with Discord Rich Presence.**
+
+## 💎 Features
+- Cross-platform compatibility (Windows, Linux, MacOS*)
+- Fast and user-friendly, featuring DSL support
+- Independent of JVM, written entirely in pure Kotlin/Native
+- Respects the ratelimit of 5 updates per 20 seconds. The library will always send the newest presence update once the client is free to do so.
 
 ## ⚙️ Installation
 
 ```gradle
-repositories {
-    maven {
-        url = uri("https://maven.pkg.github.com/reblast/KPresence")
-        credentials {
-            username = project.findProperty("gpr.user") as String? ?: System.getenv("GITHUB_ACTOR")
-            password = project.findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")
-        }
-    }
-}
-
 dependencies {
-    implementation("me.blast:kpresence:VERSION")
+    implementation("io.github.reblast:kpresence:VERSION")
 }
 ```
 
@@ -32,12 +28,8 @@ val activity = activity {
     state = "Writing code"
     
     timestamps {
-        start = epochSeconds() - 3600
-        end = epochSeconds() + 3600
-    }
-    
-    emoji {
-        name = "🚀"
+        start = epochMillis() - 3600_000
+        end = epochMillis() + 3600_000
     }
     
     party {
@@ -64,3 +56,6 @@ val activity = activity {
 
 client.update(activity)
 ```
+
+## Notes
+> * To use on macOS, clone the repository and build it manually.
