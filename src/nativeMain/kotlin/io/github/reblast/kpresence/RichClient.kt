@@ -27,8 +27,6 @@ class RichClient(val clientId: Long) {
   private val updateInterval = 4000L
   private var lastActivity: Activity? = null
   private var lastUpdated = 0L
-  private var onMessageCallback: (RichClient.(ByteArray) -> Unit)? = null
-  private var messageListener: Job? = null
   private var updateTimer: Job? = null
 
   /**
@@ -84,23 +82,26 @@ class RichClient(val clientId: Long) {
    * @return The current Client instance for chaining.
    */
   fun shutdown(): RichClient {
-    clear()
+    // TODO: Send valid payload
+    writeBytes(handle, 2, "")
     close(handle)
     handle = -1
+    updateTimer?.cancel()
+    updateTimer = null
+    lastActivity = null
     return this
   }
   
   private fun sendActivityUpdate() {
     val packet = Json.encodeToString(Packet("SET_ACTIVITY", PacketArgs(getpid(), lastActivity), "-"))
     writeBytes(handle, 1, packet)
-    readBytes(handle)
   }
   
   /**
    * Performs the initial handshake with Discord.
    */
   private fun handshake() {
-    writeBytes(handle, 0, "{\"v\": 1, \"client_id\": \"$clientId\"}")
+    writeBytes(handle, 0, "{\"v\": 1,\"client_id\":\"$clientId\"}")
     readBytes(handle)
   }
 }
