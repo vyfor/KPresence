@@ -3,7 +3,7 @@
 **📦 A lightweight, cross-platform [Kotlin/Native](https://kotlinlang.org/docs/native-overview.html) library for interacting with Discord Rich Presence.**
 
 ## 💎 Features
-- Cross-platform compatibility (Windows, Linux, MacOS*)
+- Cross-platform compatibility (Windows, Linux, macOS*)
 - Fast and user-friendly, featuring DSL support
 - Independent of JVM, written entirely in pure Kotlin/Native
 - Respects the ratelimit of 5 updates per 20 seconds. The library will always send the newest presence update once the client is free to do so.
