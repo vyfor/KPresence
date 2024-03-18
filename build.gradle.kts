@@ -1,3 +1,6 @@
+import com.vanniktech.maven.publish.JavadocJar
+import com.vanniktech.maven.publish.KotlinMultiplatform
+import com.vanniktech.maven.publish.SonatypeHost
 import org.jetbrains.dokka.gradle.DokkaTask
 import java.util.Base64
 
@@ -5,13 +8,12 @@ plugins {
     kotlin("multiplatform") version "1.9.22"
     kotlin("plugin.serialization") version "1.9.22"
     id("org.jetbrains.dokka") version "1.9.20"
-    id("maven-publish")
-    id("signing")
     id("com.louiscad.complete-kotlin") version "1.1.0"
+    id("com.vanniktech.maven.publish") version "0.28.0"
 }
 
 group = "io.github.reblast"
-version = "0.2.1"
+version = "0.2.2"
 
 repositories {
     mavenCentral()
@@ -58,90 +60,46 @@ kotlin {
     }
 }
 
-val dokkaOutputDir = "$buildDir/dokka"
-
-tasks.getByName<DokkaTask>("dokkaHtml") {
-    outputDirectory.set(file(dokkaOutputDir))
-}
-
-val deleteDokkaOutputDir by tasks.register<Delete>("deleteDokkaOutputDirectory") {
-    delete(dokkaOutputDir)
-}
-
-val javadocJar = tasks.register<Jar>("javadocJar") {
-    dependsOn(deleteDokkaOutputDir, tasks.dokkaHtml)
-    archiveClassifier.set("javadoc")
-    from(dokkaOutputDir)
-}
-
-publishing {
-    repositories {
-//        maven {
-//            name = "GitHubPackages"
-//            url = uri("https://maven.pkg.github.com/reblast/KPresence")
-//            credentials {
-//                username = project.findProperty("gpr.user") as String? ?: System.getenv("GITHUB_ACTOR")
-//                password = project.findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")
-//            }
-//        }
-        
-        maven {
-            name = "OSS"
-            val releasesRepoUrl = uri("https://oss.sonatype.org/service/local/staging/deployByRepositoryId/${project.findProperty("sonatype.repository")}/")
-            val snapshotsRepoUrl = uri("https://oss.sonatype.org/content/repositories/snapshots/")
-            url = if (version.toString().endsWith("SNAPSHOT")) snapshotsRepoUrl else releasesRepoUrl
-
-            credentials {
-                username = project.findProperty("sonatype.username") as String? ?: System.getenv("SONATYPE_USERNAME")
-                password = project.findProperty("sonatype.password") as String? ?: System.getenv("SONATYPE_PASSWORD")
+mavenPublishing {
+    configure(
+        KotlinMultiplatform(
+            javadocJar = JavadocJar.Dokka("dokkaHtml"),
+            sourcesJar = true
+        )
+    )
+    
+    coordinates("io.github.reblast", "kpresence", project.version.toString())
+    
+    pom {
+        name.set("kpresence")
+        description.set("A lightweight, cross-platform Kotlin library for Discord Rich Presence interaction.")
+        url.set("https://github.com/reblast/KPresence")
+        inceptionYear.set("2024")
+        licenses {
+            license {
+                name.set("MIT License")
+                url.set("https://opensource.org/licenses/MIT")
             }
+        }
+        developers {
+            developer {
+                id.set("reblast")
+                name.set("axeon")
+                url.set("https://github.com/reblast/")
+            }
+        }
+        scm {
+            url.set("https://github.com/reblast/KPresence/")
+            connection.set("scm:git:git://github.com/reblast/KPresence.git")
+            developerConnection.set("scm:git:ssh://git@github.com/reblast/KPresence.git")
+        }
+        issueManagement {
+            system.set("Github")
+            url.set("https://github.com/reblast/KPresence/issues")
         }
     }
     
-    publications {
-        withType<MavenPublication> {
-            artifact(javadocJar)
-            pom {
-                version = project.version.toString()
-                name.set("KPresence")
-                description.set("A lightweight, cross-platform Kotlin library for Discord Rich Presence interaction.")
-                url.set("https://github.com/reblast/KPresence")
-                licenses {
-                    license {
-                        name.set("MIT License")
-                        url.set("https://opensource.org/licenses/MIT")
-                    }
-                }
-                issueManagement {
-                    system.set("Github")
-                    url.set("https://github.com/reblast/KPresence/issues")
-                }
-                developers {
-                    developer {
-                        name.set("axeon")
-                        email.set(project.findProperty("sonatype.email") as String)
-                        url.set("https://github.com/reblast")
-                    }
-                }
-                scm {
-                    connection.set("scm:git:git://github.com/reblast/KPresence.git")
-                    developerConnection.set("scm:git:ssh://github.com:reblast/KPresence.git")
-                    url.set("http://github.com/reblast/KPresence/tree/master")
-                }
-            }
-        }
-    }
-}
-
-signing {
-    useInMemoryPgpKeys(
-        Base64.getDecoder().decode(project.findProperty("gpg.key") as String? ?: System.getenv("GPG_PRIVATE_KEY")).decodeToString(),
-        project.findProperty("gpg.password") as String? ?: System.getenv("GPG_PRIVATE_PASSWORD")
-    )
-    sign(publishing.publications)
-}
-
-tasks.withType<AbstractPublishToMaven>().configureEach {
-    val signingTasks = tasks.withType<Sign>()
-    mustRunAfter(signingTasks)
+    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
+    
+    signAllPublications()
 }
