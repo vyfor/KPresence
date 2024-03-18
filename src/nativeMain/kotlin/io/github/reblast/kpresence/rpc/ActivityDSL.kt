@@ -145,12 +145,12 @@ class ActivityTimestampsBuilder {
   /**
    * Unix time (in milliseconds) of when the activity started.
    */
-  var start: Int? = null
+  var start: Long? = null
   
   /**
    * Unix time (in milliseconds) of when the activity ends.
    */
-  var end: Int? = null
+  var end: Long? = null
 
   /**
    * Builds the configured ActivityTimestamps instance.
