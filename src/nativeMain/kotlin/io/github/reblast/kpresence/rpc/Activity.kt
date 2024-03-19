@@ -9,9 +9,11 @@ import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import io.github.reblast.kpresence.rpc.ActivityType
 
 /**
  * Represents a user's activity on Discord.
+ * Most fields have a maximum length of 128 characters.
  * @property type Activity type.
  * @property url Stream URL, is validated when type is [ActivityType.STREAMING].
  * @property timestamps Unix timestamps for start and/or end of the game.
@@ -29,34 +31,30 @@ import kotlinx.serialization.encoding.Encoder
 @Serializable
 data class Activity(
   val type: ActivityType = ActivityType.GAME,
-  val url: String? = null,
   val timestamps: ActivityTimestamps? = null,
-  @SerialName("application_id")
-  val applicationId: Long? = null,
   val details: String? = null,
   val state: String? = null,
-  val emoji: ActivityEmoji? = null,
   val party: ActivityParty? = null,
   val assets: ActivityAssets? = null,
   val secrets: ActivitySecrets? = null,
   val instance: Boolean? = null,
-  val flags: UInt? = null,
   val buttons: Array<ActivityButton>? = null
-)
+) {
+  init {
+    require(details == null || details.length in 2..128) { "Details must be between 2 and 128 characters." }
+    require(state == null || state.length in 2..128) { "State must be between 2 and 128 characters." }
+    require(buttons == null || buttons.size <= 2) { "Buttons have a maximum size of 2, received ${buttons?.size}." }
+  }
+}
 
 /**
  * Represents the type of activity.
- * The [ActivityType.STREAMING] type currently only supports Twitch and YouTube. Only https://twitch.tv/ and https://youtube.com/ urls will work.
- * If set to [ActivityType.CUSTOM], emoji and state can be used for setting custom status.
  */
 @Serializable(ActivityTypeSerializer::class)
-enum class ActivityType {
-  GAME,
-  STREAMING,
-  LISTENING,
-  WATCHING,
-  CUSTOM,
-  COMPETING
+enum class ActivityType(val value: Short) {
+  GAME(0),
+  LISTENING(2),
+  WATCHING(3),
 }
 
 /**
@@ -68,31 +66,28 @@ enum class ActivityType {
 data class ActivityTimestamps(
   val start: Long? = null,
   val end: Long? = null
-)
-
-/**
- * Represents the emoji for an activity.
- * @property name Name of the emoji.
- * @property id ID of the emoji.
- * @property animated Whether the emoji is animated.
- */
-@Serializable
-data class ActivityEmoji(
-  val name: String,
-  val id: Long? = null,
-  val animated: Boolean = false
-)
+) {
+  init {
+    require(!(start != null && end != null)) { "Only one of start or end timestamps should be provided, not both." }
+  }
+}
 
 /**
  * Represents the party for an activity.
  * @property id ID of the party.
- * @property size Used to show the party's current and maximum size.
+ * @property size Used to show the party's current and maximum size up to 5.
  */
 @Serializable
 data class ActivityParty(
   val id: String? = null,
   val size: IntArray? = null
-)
+) {
+  init {
+    require(id == null || id.length in 2..128) { "ID must be between 2 and 128 characters." }
+    require(size == null || size.size == 2) { "Size must be an array of 2 integers." }
+    require(size == null || size.all { it in 0..5 } && size[0] <= size[1]) { "Size must be an array of 2 integers between 0 and 5, with the former not exceeding the latter." }
+  }
+}
 
 /**
  * Represents the assets for an activity.
@@ -111,7 +106,14 @@ data class ActivityAssets(
   val smallImage: String? = null,
   @SerialName("small_text")
   val smallText: String? = null
-)
+) {
+  init {
+    require(largeImage == null || largeImage.length in 2..256) { "Large image must be between 2 and 256 characters." }
+    require(largeText == null || largeText.length in 2..128) { "Large text must be between 2 and 128 characters." }
+    require(smallImage == null || smallImage.length in 2..256) { "Small image must be between 2 and 256 characters." }
+    require(smallText == null || smallText.length in 2..128) { "Small text must be between 2 and 128 characters." }
+  }
+}
 
 /**
  * Represents the secrets for an activity.
@@ -124,22 +126,12 @@ data class ActivitySecrets(
   val join: String? = null,
   val spectate: String? = null,
   val match: String? = null
-)
-
-/**
- * Represents the flags for an activity.
- * @property value The value of the flag.
- */
-enum class ActivityFlags(private val value: UInt) {
-  INSTANCE(1u),
-  JOIN(1u shl 1),
-  SPECTATE(1u shl 2),
-  JOIN_REQUEST(1u shl 3),
-  SYNC(1u shl 4),
-  PLAY(1u shl 5),
-  PARTY_PRIVACY_FRIENDS(1u shl 6),
-  PARTY_PRIVACY_VOICE_CHANNEL(1u shl 7),
-  EMBEDDED(1u shl 8)
+) {
+  init {
+    require(join == null || join.length in 2..128) { "Join secret must be between 2 and 128 characters." }
+    require(spectate == null || spectate.length in 2..128) { "Spectate secret must be between 2 and 128 characters." }
+    require(match == null || match.length in 2..128) { "Match secret must be between 2 and 128 characters." }
+  }
 }
 
 /**
@@ -151,19 +143,24 @@ enum class ActivityFlags(private val value: UInt) {
 data class ActivityButton(
   val label: String,
   val url: String
-)
+) {
+  init {
+    require(label.length in 2..32) { "Label must be between 2 and 32 characters." }
+    require(url.length in 2..512) { "URL must be between 2 and 512 characters." }
+  }
+}
 
 /**
  * Serializer for the ActivityType enum.
  */
 private object ActivityTypeSerializer : KSerializer<ActivityType> {
-  override val descriptor = PrimitiveSerialDescriptor("me.blast.ActivityType", PrimitiveKind.INT)
+  override val descriptor = PrimitiveSerialDescriptor("ActivityType", PrimitiveKind.SHORT)
   
   override fun serialize(encoder: Encoder, value: ActivityType) {
-    encoder.encodeInt(value.ordinal)
+    encoder.encodeShort(value.value)
   }
   
   override fun deserialize(decoder: Decoder): ActivityType {
-    return ActivityType.entries[decoder.decodeInt()]
+    return ActivityType.values().first { it.value == decoder.decodeShort() }
   }
 }
