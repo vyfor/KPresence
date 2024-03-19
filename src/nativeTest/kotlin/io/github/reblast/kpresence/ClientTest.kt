@@ -1,6 +1,6 @@
 package io.github.reblast.kpresence
 
-import io.github.reblast.kpresence.rpc.activity
+import io.github.reblast.kpresence.rpc.*
 import io.github.reblast.kpresence.utils.epochMillis
 import kotlin.system.exitProcess
 import kotlin.test.Test
@@ -11,11 +11,7 @@ class ClientTest {
     val client = RichClient(1216296290451984424)
     
     client.connect {
-      update(
-        activity {
-          details = "KPresence 1"
-        }
-      )
+      println("Connected")
     }
     
     while (true) {
@@ -24,11 +20,16 @@ class ClientTest {
           client.shutdown()
           exitProcess(0)
         }
+
+        if (this == "clear") {
+          client.clear()
+          return@apply
+        }
         
         client.update(
           activity {
-            state = this@apply
-            details = "KPresence"
+            details = this@apply
+            state = "KPresence"
           }
         )
       }
