@@ -23,34 +23,19 @@ class ActivityBuilder {
   var type: ActivityType = ActivityType.GAME
   
   /**
-   * Stream URL, is validated when type is [ActivityType.STREAMING].
-   */
-  var url: String? = null
-  
-  /**
    * Unix timestamps for start/end of the game.
    */
   var timestamps: ActivityTimestamps? = null
   
   /**
-   * Application ID for the game.
-   */
-  var applicationId: Long? = null
-  
-  /**
-   * What the player is currently doing.
+   * What the player is currently doing (First line).
    */
   var details: String? = null
   
   /**
-   * User's current party status, or text used for a custom status.
+   * User's current party status (Second line).
    */
   var state: String? = null
-  
-  /**
-   * Emoji used for a custom status, is validated when type is [ActivityType.CUSTOM].
-   */
-  var emoji: ActivityEmoji? = null
   
   /**
    * Information for the current party of the player.
@@ -72,11 +57,6 @@ class ActivityBuilder {
    */
   var instance: Boolean? = null
   
-  /**
-   * Activity flags.
-   */
-  var flags: UInt? = null
-  
   private val buttons: MutableList<ActivityButton> = mutableListOf()
 
   /**
@@ -85,14 +65,6 @@ class ActivityBuilder {
    */
   fun timestamps(block: ActivityTimestampsBuilder.() -> Unit) {
     timestamps = ActivityTimestampsBuilder().apply(block).build()
-  }
-
-  /**
-   * Configures the emoji for the Activity.
-   * @param block The builder block used to configure the ActivityEmoji.
-   */
-  fun emoji(block: ActivityEmojiBuilder.() -> Unit) {
-    emoji = ActivityEmojiBuilder().apply(block).build()
   }
 
   /**
@@ -133,7 +105,7 @@ class ActivityBuilder {
    * @return The constructed Activity instance.
    */
   fun build(): Activity = Activity(
-    type, url, timestamps, applicationId, details, state, emoji, party, assets, secrets, instance, flags, buttons.takeIf { it.isNotEmpty() }?.toTypedArray()
+    type, timestamps, details, state, party, assets, secrets, instance, buttons.takeIf { it.isNotEmpty() }?.toTypedArray()
   )
 }
 
@@ -160,33 +132,6 @@ class ActivityTimestampsBuilder {
 }
 
 /**
- * Builder class for constructing ActivityEmoji instances.
- */
-@ActivityDSL
-class ActivityEmojiBuilder {
-  /**
-   * Name of the emoji.
-   */
-  var name: String = ""
-  
-  /**
-   * ID of the emoji.
-   */
-  var id: Long? = null
-  
-  /**
-   * Whether the emoji is animated.
-   */
-  var animated: Boolean = false
-
-  /**
-   * Builds the configured ActivityEmoji instance.
-   * @return The constructed ActivityEmoji instance.
-   */
-  fun build(): ActivityEmoji = ActivityEmoji(name, id, animated)
-}
-
-/**
  * Builder class for constructing ActivityParty instances.
  */
 @ActivityDSL
@@ -195,8 +140,8 @@ class ActivityPartyBuilder {
    * ID of the party.
    */
   var id: String? = null
-  private var currentSize: Int? = null
-  private var maxSize: Int? = null
+  var currentSize: Int? = null
+  var maxSize: Int? = null
 
   /**
    * Configures the size of the party.
