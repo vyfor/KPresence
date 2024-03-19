@@ -6,13 +6,14 @@
 - Cross-platform compatibility (Windows, Linux, macOS*)
 - Fast and user-friendly, featuring DSL support
 - Independent of JVM, written entirely in pure Kotlin/Native
-- Respects the ratelimit of 5 updates per 20 seconds. The library will always send the newest presence update once the client is free to do so.
+- Respects the ratelimit of one update per 15 seconds. The library will always send the newest presence update once the client is free to do so
+- Validates the activity fields before sending them
 
 ## ⚙️ Installation
 
 ```gradle
 dependencies {
-    implementation("io.github.reblast:kpresence:VERSION")
+    implementation("io.github.reblast:kpresence:0.3.0")
 }
 ```
 
