@@ -24,7 +24,7 @@ actual fun openPipe(): Int {
     for (i in 0..9) {
       val pipeAddr = alloc<sockaddr_un>().apply {
         sun_family = AF_UNIX.convert()
-        snprintf(sun_path, PATH_MAX.toULong(), "${dir}/discord-ipc-", i)
+        snprintf(sun_path, PATH_MAX.toULong(), "${dir}/discord-ipc-%d", i)
       }
       
       val err = connect(socket, pipeAddr.ptr.reinterpret(), sizeOf<sockaddr_un>().convert())

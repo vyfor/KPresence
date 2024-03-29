@@ -31,7 +31,7 @@ actual fun openPipe(): Int {
       val pipeAddr = alloc<sockaddr_un>().apply {
         sun_family = AF_UNIX.convert()
         println("snprintf '${dir}/discord-ipc-$i'")
-        snprintf(sun_path, PATH_MAX.toULong(), "${dir}/discord-ipc-", i)
+        snprintf(sun_path, PATH_MAX.toULong(), "${dir}/discord-ipc-%d", i)
       }
       print("Successfully set pipe address")
       
