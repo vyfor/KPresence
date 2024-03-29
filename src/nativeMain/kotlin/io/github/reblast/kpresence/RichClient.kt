@@ -26,7 +26,6 @@ class RichClient(val clientId: Long) {
     private set
   
   private val clientScope = CoroutineScope(Dispatchers.IO)
-  private val updateInterval = 15000L
   private var lastActivity: Activity? = null
   private var lastUpdated = 0L
   private var updateTimer: Job? = null
@@ -37,7 +36,10 @@ class RichClient(val clientId: Long) {
    * @return The current Client instance for chaining.
    */
   fun connect(callback: (RichClient.() -> Unit)? = null): RichClient {
-    if (state != State.DISCONNECTED) return this
+    if (state != State.DISCONNECTED) {
+      callback?.invoke(this)
+      return this
+    }
 
     handle = openPipe()
     state = State.CONNECTED
@@ -67,6 +69,7 @@ class RichClient(val clientId: Long) {
    * @param activity The activity to display.
    * @return The current Client instance for chaining.
    */
+  @OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
   fun update(activity: Activity?): RichClient {
     require(state == State.SENT_HANDSHAKE) { "Presence updates are not allowed while disconnected." }
     if (lastActivity == activity) return this
@@ -74,12 +77,12 @@ class RichClient(val clientId: Long) {
     val currentTime = epochMillis()
     val timeSinceLastUpdate = currentTime - lastUpdated
 
-    if (timeSinceLastUpdate >= updateInterval) {
+    if (timeSinceLastUpdate >= UPDATE_INTERVAL) {
       sendActivityUpdate()
       lastUpdated = currentTime
     } else if (updateTimer?.isActive != true) {
       updateTimer = clientScope.launch {
-        delay(updateInterval - timeSinceLastUpdate)
+        delay(UPDATE_INTERVAL - timeSinceLastUpdate)
         sendActivityUpdate()
         lastUpdated = epochMillis()
       }
@@ -104,7 +107,7 @@ class RichClient(val clientId: Long) {
   fun shutdown(): RichClient {
     if (state == State.DISCONNECTED) return this
     // TODO: Send valid payload
-    writeBytes(handle, 2, "{\"v\": 1,\"client_id\":\"$clientId\"}")
+    writeBytes(handle, 2, "[\"close_reason\"]")
     readBytes(handle)
     close(handle)
     state = State.DISCONNECTED
@@ -129,6 +132,10 @@ class RichClient(val clientId: Long) {
       throw RuntimeException("Provided invalid client ID: $clientId")
     }
     state = State.SENT_HANDSHAKE
+  }
+
+  companion object {
+    private const val UPDATE_INTERVAL = 15000L
   }
 }
 
