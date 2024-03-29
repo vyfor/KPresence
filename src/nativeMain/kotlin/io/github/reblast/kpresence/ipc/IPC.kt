@@ -2,11 +2,9 @@
 
 package io.github.reblast.kpresence.ipc
 
-import kotlinx.cinterop.ExperimentalForeignApi
-import kotlinx.cinterop.UnsafeNumber
-import kotlinx.cinterop.refTo
 import io.github.reblast.kpresence.utils.putInt
 import io.github.reblast.kpresence.utils.reverseBytes
+import kotlinx.cinterop.*
 import platform.posix.*
 import platform.zlib.uLong
 import kotlin.experimental.ExperimentalNativeApi
@@ -24,10 +22,10 @@ fun openPipe(): Int {
     println("OS: Linux\n")
 
     val dir =
-      getenv("XDG_RUNTIME_DIR") ?:
+      (getenv("XDG_RUNTIME_DIR") ?:
       getenv("TMPDIR") ?:
       getenv("TMP") ?:
-      getenv("TEMP") ?:
+      getenv("TEMP"))?.toKString() ?:
       "/tmp"
 
     print("Found temp directory at `$dir`")
