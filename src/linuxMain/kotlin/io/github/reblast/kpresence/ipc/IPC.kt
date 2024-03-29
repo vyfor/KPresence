@@ -73,18 +73,17 @@ actual fun writeBytes(handle: Int, opcode: Int, data: String) {
   println("Payload: $data\n")
   
   val bytes = data.encodeToByteArray()
-  val totalBytes = bytes.size + 8
-  val buffer = ByteArray(totalBytes)
+  val buffer = ByteArray(bytes.size + 8)
   
-  buffer.putInt(0, opcode.reverseBytes())
-  buffer.putInt(4, bytes.size.reverseBytes())
+  buffer.putInt(opcode.reverseBytes())
+  buffer.putInt(bytes.size.reverseBytes(), 4)
   bytes.copyInto(buffer, 8)
   
-  val bytesWritten = send(handle, buffer.refTo(0), totalBytes.convert(), 0)
+  val bytesWritten = send(handle, buffer.refTo(0), bytes.size.convert(), MSG_NOSIGNAL)
   
   if (bytesWritten.toInt() == -1) {
     throw RuntimeException("Error writing to socket")
-  } else if (bytesWritten.toInt() != totalBytes) {
+  } else if (bytesWritten.toInt() != bytes.size) {
     throw RuntimeException("Incomplete write to socket")
   }
 }
