@@ -52,6 +52,7 @@ kotlin {
             dependsOn(commonMain)
             dependsOn(nativeMain)
         }
+        val linuxTest by creating
         val linuxArm64Main by getting {
             dependsOn(linuxMain)
         }
@@ -84,7 +85,7 @@ kotlin {
                 dependsOn(linuxMain)
             }
             
-            target.compilations["test"].defaultSourceSet.dependsOn(nativeTest)
+            target.compilations["test"].defaultSourceSet.dependsOn(linuxTest)
         }
         
         macosTargets.forEach { target ->

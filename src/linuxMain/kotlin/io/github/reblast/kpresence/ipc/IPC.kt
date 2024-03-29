@@ -13,22 +13,35 @@ actual fun openPipe(): Int {
      getenv("TMP") ?:
      getenv("TEMP"))?.toKString() ?:
     "/tmp"
+  println("Found temp dir: $dir")
+  println("Creating socket... ")
   val socket = socket(AF_UNIX, SOCK_STREAM, 0)
   if (socket == -1) {
     throw RuntimeException("Failed to create socket")
   }
+  print("Success")
   
+  println("fcntl... ")
   fcntl(socket, F_SETFL, O_NONBLOCK)
+  print("Success")
   
   memScoped {
     for (i in 0..9) {
+      println("Setting pipe address...")
       val pipeAddr = alloc<sockaddr_un>().apply {
         sun_family = AF_UNIX.convert()
+        println("snprintf '${dir}/discord-ipc-$i'")
         snprintf(sun_path, PATH_MAX.toULong(), "${dir}/discord-ipc-", i)
       }
+      print("Successfully set pipe address")
       
+      println("Connecting to '${dir}/discord-ipc-$i'... ")
       val err = connect(socket, pipeAddr.ptr.reinterpret(), sizeOf<sockaddr_un>().convert())
-      if (err == 0) return socket
+      if (err == 0) {
+        print("Success")
+        return socket
+      }
+      print("Failed")
     }
   }
   
