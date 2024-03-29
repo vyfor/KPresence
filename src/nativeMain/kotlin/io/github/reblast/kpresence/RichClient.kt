@@ -2,6 +2,7 @@
 
 package io.github.reblast.kpresence
 
+import io.github.reblast.kpresence.ipc.closePipe
 import io.github.reblast.kpresence.ipc.openPipe
 import io.github.reblast.kpresence.ipc.readBytes
 import io.github.reblast.kpresence.ipc.writeBytes
@@ -12,9 +13,7 @@ import io.github.reblast.kpresence.utils.epochMillis
 import kotlinx.coroutines.*
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import platform.posix.close
 import platform.posix.getpid
-import kotlin.io.print
 
 /**
  * Manages client connections and activity updates for Discord presence.
@@ -69,7 +68,6 @@ class RichClient(val clientId: Long) {
    * @param activity The activity to display.
    * @return The current Client instance for chaining.
    */
-  @OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
   fun update(activity: Activity?): RichClient {
     require(state == State.SENT_HANDSHAKE) { "Presence updates are not allowed while disconnected." }
     if (lastActivity == activity) return this
@@ -108,9 +106,8 @@ class RichClient(val clientId: Long) {
     if (state == State.DISCONNECTED) return this
     // TODO: Send valid payload
     writeBytes(handle, 2, "[\"close_reason\"]")
-    println("Received message:")
-    println(readBytes(handle).decodeToString())
-    close(handle)
+    readBytes(handle)
+    closePipe(handle)
     state = State.DISCONNECTED
     handle = -1
     updateTimer?.cancel()
