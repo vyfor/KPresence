@@ -33,7 +33,7 @@ actual fun openPipe(): Int {
         println("snprintf '${dir}/discord-ipc-$i'")
         snprintf(sun_path, PATH_MAX.toULong(), "${dir}/discord-ipc-%d", i)
       }
-      print("Successfully set pipe address")
+      println("Successfully set pipe address\n")
       
       println("Connecting to '${dir}/discord-ipc-$i'... ")
       val err = connect(socket, pipeAddr.ptr.reinterpret(), sizeOf<sockaddr_un>().convert())
@@ -56,20 +56,35 @@ actual fun readBytes(handle: Int, bufferSize: Int): ByteArray {
   if (handle == -1) throw IllegalStateException("Not connected")
   
   val buffer = ByteArray(bufferSize)
-  val bytesRead = read(handle, buffer.refTo(0), buffer.size.toULong()).toInt()
+  val bytesRead = recv(handle, buffer.refTo(0), bufferSize.convert(), 0)
   
-  return buffer.copyOf(bytesRead)
+  if (bytesRead.toInt() == -1) {
+    throw RuntimeException("Error reading from socket")
+  }
+  
+  return buffer.copyOf(bytesRead.toInt())
 }
 
 actual fun writeBytes(handle: Int, opcode: Int, data: String) {
   if (handle == -1) throw IllegalStateException("Not connected")
   
-  val bytes = data.encodeToByteArray()
-  val buffer = ByteArray(bytes.size + 8)
+  println("Sending the following data to the socket:")
+  println("Opcode: $opcode")
+  println("Payload: $data\n")
   
-  buffer.putInt(opcode.reverseBytes())
-  buffer.putInt(bytes.size.reverseBytes(), 4)
+  val bytes = data.encodeToByteArray()
+  val totalBytes = bytes.size + 8
+  val buffer = ByteArray(totalBytes)
+  
+  buffer.putInt(0, opcode.reverseBytes())
+  buffer.putInt(4, bytes.size.reverseBytes())
   bytes.copyInto(buffer, 8)
   
-  write(handle, buffer.refTo(0), buffer.size.toULong())
+  val bytesWritten = send(handle, buffer.refTo(0), totalBytes.convert(), 0)
+  
+  if (bytesWritten.toInt() == -1) {
+    throw RuntimeException("Error writing to socket")
+  } else if (bytesWritten.toInt() != totalBytes) {
+    throw RuntimeException("Incomplete write to socket")
+  }
 }
