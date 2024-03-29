@@ -108,7 +108,8 @@ class RichClient(val clientId: Long) {
     if (state == State.DISCONNECTED) return this
     // TODO: Send valid payload
     writeBytes(handle, 2, "[\"close_reason\"]")
-    readBytes(handle)
+    println("Received message:")
+    println(readBytes(handle).decodeToString())
     close(handle)
     state = State.DISCONNECTED
     handle = -1

@@ -21,21 +21,53 @@ fun openPipe(): Int {
       else return handle
     }
   } else {
+    println("OS: Linux\n")
+
     val dir =
       getenv("XDG_RUNTIME_DIR") ?:
       getenv("TMPDIR") ?:
       getenv("TMP") ?:
       getenv("TEMP") ?:
       "/tmp"
-    
+
+    print("Found temp directory at `$dir`")
+    print("Trying to connect\n")
+
     for (i in 0..9) {
-      val handle = open("${dir}/discord-ipc-$i", O_RDWR)
+      val pipePath = "${dir}/discord-ipc-$i"
+      print("Connecting to $pipePath")
+      val handle = open(pipePath, O_RDWR)
       
-      if (handle == -1) continue
-      else return handle
+      if (handle == -1) {
+        println("Failed")
+        continue
+      } else {
+        println("Success")
+        return handle
+      }
+    }
+
+    println("\nTrying to connect to flatpack path\n")
+
+    // $XDG_RUNTIME_DIR/app/com.discordapp.Discord/discord-ipc-0
+
+
+    for (i in 0..9) {
+      val pipePath = "${dir}/discord-ipc-$i"
+      print("Connecting to $pipePath")
+      val handle = open(pipePath, O_RDWR)
+      
+      if (handle == -1) {
+        println("Failed")
+        continue
+      } else {
+        println("Success")
+        return handle
+      }
     }
   }
   
+
   throw RuntimeException("Could not connect to the pipe!")
 }
 
