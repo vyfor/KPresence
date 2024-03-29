@@ -53,7 +53,7 @@ fun openPipe(): Int {
 
 
     for (i in 0..9) {
-      val pipePath = "${dir}/discord-ipc-$i"
+      val pipePath = "${dir}/app/com.discordapp.Discord/discord-ipc-$i"
       print("Connecting to $pipePath")
       val handle = open(pipePath, O_RDWR)
       
