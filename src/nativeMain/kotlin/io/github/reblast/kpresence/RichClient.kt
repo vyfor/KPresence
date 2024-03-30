@@ -21,7 +21,8 @@ import platform.posix.getpid
  */
 class RichClient(val clientId: Long) {
   var state = State.DISCONNECTED
-  var handle = -1
+    private set
+  var pipe = -1
     private set
   
   private val clientScope = CoroutineScope(Dispatchers.IO)
@@ -40,7 +41,7 @@ class RichClient(val clientId: Long) {
       return this
     }
 
-    handle = openPipe()
+    pipe = openPipe()
     state = State.CONNECTED
     handshake()
 
@@ -105,11 +106,11 @@ class RichClient(val clientId: Long) {
   fun shutdown(): RichClient {
     if (state == State.DISCONNECTED) return this
     // TODO: Send valid payload
-    writeBytes(handle, 2, "[\"close_reason\"]")
-    readBytes(handle)
-    closePipe(handle)
+    writeBytes(pipe, 2, "[\"close_reason\"]")
+    readBytes(pipe)
+    closePipe(pipe)
     state = State.DISCONNECTED
-    handle = -1
+    pipe = -1
     updateTimer?.cancel()
     updateTimer = null
     lastActivity = null
@@ -120,13 +121,13 @@ class RichClient(val clientId: Long) {
   private fun sendActivityUpdate() {
     if (state != State.SENT_HANDSHAKE) return
     val packet = Json.encodeToString(Packet("SET_ACTIVITY", PacketArgs(getpid(), lastActivity), "-"))
-    writeBytes(handle, 1, packet)
-    readBytes(handle)
+    writeBytes(pipe, 1, packet)
+    readBytes(pipe)
   }
   
   private fun handshake() {
-    writeBytes(handle, 0, "{\"v\": 1,\"client_id\":\"$clientId\"}")
-    if (readBytes(handle).decodeToString().contains("Invalid client ID")) {
+    writeBytes(pipe, 0, "{\"v\": 1,\"client_id\":\"$clientId\"}")
+    if (readBytes(pipe).decodeToString().contains("Invalid client ID")) {
       throw RuntimeException("Provided invalid client ID: $clientId")
     }
     state = State.SENT_HANDSHAKE

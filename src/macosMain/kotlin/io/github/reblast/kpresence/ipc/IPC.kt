@@ -13,18 +13,15 @@ actual fun openPipe(): Int {
      getenv("TMP") ?:
      getenv("TEMP"))?.toKString() ?:
     "/tmp"
-  val socket = socket(AF_UNIX, SOCK_STREAM, 0)
-  if (socket == -1) {
-    throw RuntimeException("Failed to create socket")
-  }
   
-  fcntl(socket, F_SETFL, O_NONBLOCK)
+  val socket = socket(AF_UNIX, SOCK_STREAM, 0)
+  if (socket == -1) throw RuntimeException("Failed to create socket")
   
   memScoped {
     for (i in 0..9) {
       val pipeAddr = alloc<sockaddr_un>().apply {
         sun_family = AF_UNIX.convert()
-        snprintf(sun_path, PATH_MAX.toULong(), "${dir}/discord-ipc-%d", i)
+        snprintf(sun_path, PATH_MAX.toULong(), "${dir}/discord-ipc-$i")
       }
       
       val err = connect(socket, pipeAddr.ptr.reinterpret(), sizeOf<sockaddr_un>().convert())
@@ -32,24 +29,35 @@ actual fun openPipe(): Int {
     }
   }
   
+  close(socket)
   throw RuntimeException("Could not connect to the pipe!")
 }
 
-actual fun closePipe(handle: Int) {
-  close(handle)
+actual fun closePipe(pipe: Int) {
+  close(pipe)
 }
 
-actual fun readBytes(handle: Int, bufferSize: Int): ByteArray {
-  if (handle == -1) throw IllegalStateException("Not connected")
+actual fun readBytes(pipe: Int, bufferSize: Int): ByteArray {
+  if (pipe == -1) throw IllegalStateException("Not connected")
   
   val buffer = ByteArray(bufferSize)
-  val bytesRead = read(handle, buffer.refTo(0), buffer.size.toULong()).toInt()
+  
+  val bytesRead = recv(pipe, buffer.refTo(0), bufferSize.convert(), 0).toInt()
+  if (bytesRead < 0) {
+    if (errno == EAGAIN) return buffer
+    
+    throw RuntimeException("Error reading from socket")
+  } else if (bytesRead == 0) {
+    close(pipe)
+    
+    throw RuntimeException("Connection closed")
+  }
   
   return buffer.copyOf(bytesRead)
 }
 
-actual fun writeBytes(handle: Int, opcode: Int, data: String) {
-  if (handle == -1) throw IllegalStateException("Not connected")
+actual fun writeBytes(pipe: Int, opcode: Int, data: String) {
+  if (pipe == -1) throw IllegalStateException("Not connected")
   
   val bytes = data.encodeToByteArray()
   val buffer = ByteArray(bytes.size + 8)
@@ -58,5 +66,10 @@ actual fun writeBytes(handle: Int, opcode: Int, data: String) {
   buffer.putInt(bytes.size.reverseBytes(), 4)
   bytes.copyInto(buffer, 8)
   
-  write(handle, buffer.refTo(0), buffer.size.toULong())
+  val bytesWritten = send(pipe, buffer.refTo(0), buffer.size.convert(), 0).toInt()
+  if (bytesWritten < 0) {
+    close(pipe)
+    
+    throw RuntimeException("Error writing to socket")
+  }
 }

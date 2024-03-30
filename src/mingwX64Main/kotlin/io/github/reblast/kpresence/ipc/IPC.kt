@@ -4,34 +4,33 @@ import io.github.reblast.kpresence.utils.putInt
 import io.github.reblast.kpresence.utils.reverseBytes
 import kotlinx.cinterop.*
 import platform.posix.*
-import platform.windows.*
 
 actual fun openPipe(): Int {
   for (i in 0..9) {
-    val handle = open("\\\\.\\pipe\\discord-ipc-$i", O_RDWR)
+    val pipe = open("\\\\.\\pipe\\discord-ipc-$i", O_RDWR)
     
-    if (handle == -1) continue
-    else return handle
+    if (pipe == -1) continue
+    else return pipe
   }
   
   throw RuntimeException("Could not connect to the pipe!")
 }
 
-actual fun closePipe(handle: Int) {
-  close(handle)
+actual fun closePipe(pipe: Int) {
+  close(pipe)
 }
 
-actual fun readBytes(handle: Int, bufferSize: Int): ByteArray {
-  if (handle == -1) throw IllegalStateException("Not connected")
+actual fun readBytes(pipe: Int, bufferSize: Int): ByteArray {
+  if (pipe == -1) throw IllegalStateException("Not connected")
   
   val buffer = ByteArray(bufferSize)
-  val bytesRead = read(handle, buffer.refTo(0), buffer.size.toUInt())
+  val bytesRead = read(pipe, buffer.refTo(0), buffer.size.toUInt())
   
   return buffer.copyOf(bytesRead)
 }
 
-actual fun writeBytes(handle: Int, opcode: Int, data: String) {
-  if (handle == -1) throw IllegalStateException("Not connected")
+actual fun writeBytes(pipe: Int, opcode: Int, data: String) {
+  if (pipe == -1) throw IllegalStateException("Not connected")
 
   val bytes = data.encodeToByteArray()
   val buffer = ByteArray(bytes.size + 8)
@@ -40,5 +39,5 @@ actual fun writeBytes(handle: Int, opcode: Int, data: String) {
   buffer.putInt(bytes.size.reverseBytes(), 4)
   bytes.copyInto(buffer, 8)
 
-  write(handle, buffer.refTo(0), buffer.size.toUInt())
+  write(pipe, buffer.refTo(0), buffer.size.toUInt())
 }
