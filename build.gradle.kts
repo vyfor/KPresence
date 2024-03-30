@@ -1,8 +1,6 @@
 import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.KotlinMultiplatform
 import com.vanniktech.maven.publish.SonatypeHost
-import org.jetbrains.dokka.gradle.DokkaTask
-import java.util.Base64
 
 plugins {
     kotlin("multiplatform") version "1.9.22"
@@ -20,21 +18,18 @@ repositories {
 }
 
 kotlin {
-    val targets = listOf(
+    val mingwTarget = mingwX64()
+    val linuxTargets = listOf(
         linuxArm64(),
-        linuxX64(),
+        linuxX64()
+    )
+    val macosTargets = listOf(
         macosArm64(),
-        macosX64(),
-        mingwX64()
+        macosX64()
     )
     
     sourceSets {
         val commonMain by getting
-        val linuxArm64Main by getting
-        val linuxX64Main by getting
-        val macosArm64Main by getting
-        val macosX64Main by getting
-        val mingwX64Main by getting
         val nativeMain by creating {
             dependsOn(commonMain)
             
@@ -49,13 +44,60 @@ kotlin {
                 implementation(kotlin("test"))
             }
         }
-        
-        targets.forEach { target ->
-            target.compilations["main"].defaultSourceSet.dependsOn(nativeMain)
+        val mingwX64Main by getting {
+            dependsOn(commonMain)
+            dependsOn(nativeMain)
+        }
+        val linuxMain by creating {
+            dependsOn(commonMain)
+            dependsOn(nativeMain)
+        }
+        val linuxArm64Main by getting {
+            dependsOn(linuxMain)
+        }
+        val linuxX64Main by getting {
+            dependsOn(linuxMain)
+        }
+        val macosMain by creating {
+            dependsOn(commonMain)
+            dependsOn(nativeMain)
+        }
+        val macosArm64Main by getting {
+            dependsOn(macosMain)
+        }
+        val macosX64Main by getting {
+            dependsOn(macosMain)
         }
         
-        targets.forEach { target ->
+        mingwTarget.apply {
+            compilations["main"].defaultSourceSet.apply {
+                dependsOn(nativeMain)
+                dependsOn(mingwX64Main)
+            }
+            
+            compilations["test"].defaultSourceSet.dependsOn(nativeTest)
+        }
+        
+        linuxTargets.forEach { target ->
+            target.compilations["main"].defaultSourceSet.apply {
+                dependsOn(nativeMain)
+                dependsOn(linuxMain)
+            }
+            
             target.compilations["test"].defaultSourceSet.dependsOn(nativeTest)
+        }
+        
+        macosTargets.forEach { target ->
+            target.compilations["main"].defaultSourceSet.apply {
+                dependsOn(nativeMain)
+                dependsOn(macosMain)
+            }
+            
+            target.compilations["test"].defaultSourceSet.dependsOn(nativeTest)
+        }
+        
+        all {
+            languageSettings.optIn("kotlinx.cinterop.ExperimentalForeignApi")
         }
     }
 }

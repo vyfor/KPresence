@@ -19,10 +19,8 @@ internal fun Int.reverseBytes(): Int {
     (this and 0x000000ff shl 24)
 }
 
-@OptIn(ExperimentalForeignApi::class)
 fun epochSeconds(): Int = time(null).toInt()
 
-@OptIn(ExperimentalForeignApi::class)
 fun formatEpoch(seconds: Long) = memScoped {
   val timePtr = alloc<time_tVar>()
   timePtr.value = seconds
@@ -36,7 +34,7 @@ fun formatEpoch(seconds: Long) = memScoped {
     append(
       "${tm.pointed.tm_hour.toString().padStart(2, '0')}:" +
       "${tm.pointed.tm_min.toString().padStart(2, '0')}:" +
-      "${tm.pointed.tm_sec.toString().padStart(2, '0')}"
+      tm.pointed.tm_sec.toString().padStart(2, '0')
     )
   }
 }

@@ -4,7 +4,6 @@ import kotlinx.cinterop.*
 import platform.windows.FILETIME
 import platform.windows.GetSystemTimeAsFileTime
 
-@OptIn(ExperimentalForeignApi::class)
 actual fun epochMillis(): Long = memScoped {
   val ft = alloc<FILETIME>()
   GetSystemTimeAsFileTime(ft.ptr)

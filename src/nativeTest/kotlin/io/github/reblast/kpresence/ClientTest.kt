@@ -2,6 +2,8 @@ package io.github.reblast.kpresence
 
 import io.github.reblast.kpresence.rpc.*
 import io.github.reblast.kpresence.utils.epochMillis
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import kotlin.system.exitProcess
 import kotlin.test.Test
 
@@ -12,6 +14,7 @@ class ClientTest {
     
     client.connect {
       println("Connected")
+      println("Awaiting input (<text>, clear, shutdown):")
     }
     
     while (true) {
