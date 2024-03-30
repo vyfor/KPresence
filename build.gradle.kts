@@ -84,7 +84,7 @@ kotlin {
                 dependsOn(linuxMain)
             }
             
-            target.compilations["test"].defaultSourceSet.dependsOn(linuxTest)
+            target.compilations["test"].defaultSourceSet.dependsOn(nativeTest)
         }
         
         macosTargets.forEach { target ->
