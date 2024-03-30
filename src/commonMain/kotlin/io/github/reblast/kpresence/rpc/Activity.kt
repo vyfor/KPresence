@@ -9,23 +9,18 @@ import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import io.github.reblast.kpresence.rpc.ActivityType
 
 /**
  * Represents a user's activity on Discord.
  * Most fields have a maximum length of 128 characters.
  * @property type Activity type.
- * @property url Stream URL, is validated when type is [ActivityType.STREAMING].
  * @property timestamps Unix timestamps for start and/or end of the game.
- * @property applicationId Application ID for the game.
  * @property details What the player is currently doing.
  * @property state User's current party status, or text used for a custom status.
- * @property emoji Emoji used for a custom status, is validated when type is [ActivityType.CUSTOM].
  * @property party Information for the current party of the player.
  * @property assets Images for the presence and their hover texts.
  * @property secrets Secrets for Rich Presence joining and spectating.
  * @property instance Whether the activity is an instanced game session.
- * @property flags Activity flags.
  * @property buttons Custom buttons shown in the Rich Presence (max 2).
  */
 @Serializable
@@ -161,6 +156,6 @@ private object ActivityTypeSerializer : KSerializer<ActivityType> {
   }
   
   override fun deserialize(decoder: Decoder): ActivityType {
-    return ActivityType.values().first { it.value == decoder.decodeShort() }
+    return ActivityType.entries.first { it.value == decoder.decodeShort() }
   }
 }

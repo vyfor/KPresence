@@ -2,18 +2,15 @@
 
 package io.github.reblast.kpresence
 
-import io.github.reblast.kpresence.ipc.closePipe
-import io.github.reblast.kpresence.ipc.openPipe
-import io.github.reblast.kpresence.ipc.readBytes
-import io.github.reblast.kpresence.ipc.writeBytes
+import io.github.reblast.kpresence.ipc.*
 import io.github.reblast.kpresence.rpc.Activity
 import io.github.reblast.kpresence.rpc.Packet
 import io.github.reblast.kpresence.rpc.PacketArgs
 import io.github.reblast.kpresence.utils.epochMillis
+import io.github.reblast.kpresence.utils.getProcessId
 import kotlinx.coroutines.*
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import platform.posix.getpid
 
 /**
  * Manages client connections and activity updates for Discord presence.
@@ -22,9 +19,8 @@ import platform.posix.getpid
 class RichClient(val clientId: Long) {
   var state = State.DISCONNECTED
     private set
-  var pipe = -1
-    private set
   
+  private val connection = Connection()
   private val clientScope = CoroutineScope(Dispatchers.IO)
   private var lastActivity: Activity? = null
   private var lastUpdated = 0L
@@ -41,7 +37,7 @@ class RichClient(val clientId: Long) {
       return this
     }
 
-    pipe = openPipe()
+    connection.open()
     state = State.CONNECTED
     handshake()
 
@@ -106,11 +102,10 @@ class RichClient(val clientId: Long) {
   fun shutdown(): RichClient {
     if (state == State.DISCONNECTED) return this
     // TODO: Send valid payload
-    writeBytes(pipe, 2, "[\"close_reason\"]")
-    readBytes(pipe)
-    closePipe(pipe)
+    connection.write(2, "{\"v\": 1,\"client_id\":\"$clientId\"}")
+    connection.read()
+    connection.close()
     state = State.DISCONNECTED
-    pipe = -1
     updateTimer?.cancel()
     updateTimer = null
     lastActivity = null
@@ -120,14 +115,14 @@ class RichClient(val clientId: Long) {
   
   private fun sendActivityUpdate() {
     if (state != State.SENT_HANDSHAKE) return
-    val packet = Json.encodeToString(Packet("SET_ACTIVITY", PacketArgs(getpid(), lastActivity), "-"))
-    writeBytes(pipe, 1, packet)
-    readBytes(pipe)
+    val packet = Json.encodeToString(Packet("SET_ACTIVITY", PacketArgs(getProcessId(), lastActivity), "-"))
+    connection.write(1, packet)
+    connection.read()
   }
   
   private fun handshake() {
-    writeBytes(pipe, 0, "{\"v\": 1,\"client_id\":\"$clientId\"}")
-    if (readBytes(pipe).decodeToString().contains("Invalid client ID")) {
+    connection.write(0, "{\"v\": 1,\"client_id\":\"$clientId\"}")
+    if (connection.read().decodeToString().contains("Invalid client ID")) {
       throw RuntimeException("Provided invalid client ID: $clientId")
     }
     state = State.SENT_HANDSHAKE

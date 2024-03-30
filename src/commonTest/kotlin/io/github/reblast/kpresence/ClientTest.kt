@@ -2,8 +2,6 @@ package io.github.reblast.kpresence
 
 import io.github.reblast.kpresence.rpc.*
 import io.github.reblast.kpresence.utils.epochMillis
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 import kotlin.system.exitProcess
 import kotlin.test.Test
 

@@ -18,6 +18,7 @@ repositories {
 }
 
 kotlin {
+    val jvmTarget = jvm()
     val mingwTarget = mingwX64()
     val linuxTargets = listOf(
         linuxArm64(),
@@ -29,20 +30,20 @@ kotlin {
     )
     
     sourceSets {
-        val commonMain by getting
-        val nativeMain by creating {
-            dependsOn(commonMain)
-            
+        val commonMain by getting {
             dependencies {
                 implementation(kotlin("stdlib"))
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
             }
         }
-        val nativeTest by creating {
+        val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
             }
+        }
+        val nativeMain by creating {
+            dependsOn(commonMain)
         }
         val mingwX64Main by getting {
             dependsOn(commonMain)
@@ -69,13 +70,21 @@ kotlin {
             dependsOn(macosMain)
         }
         
+        jvmTarget.apply {
+            compilations["main"].defaultSourceSet.apply {
+                dependsOn(commonMain)
+            }
+            
+            compilations["test"].defaultSourceSet.dependsOn(commonTest)
+        }
+        
         mingwTarget.apply {
             compilations["main"].defaultSourceSet.apply {
                 dependsOn(nativeMain)
                 dependsOn(mingwX64Main)
             }
             
-            compilations["test"].defaultSourceSet.dependsOn(nativeTest)
+            compilations["test"].defaultSourceSet.dependsOn(commonTest)
         }
         
         linuxTargets.forEach { target ->
@@ -84,7 +93,7 @@ kotlin {
                 dependsOn(linuxMain)
             }
             
-            target.compilations["test"].defaultSourceSet.dependsOn(nativeTest)
+            target.compilations["test"].defaultSourceSet.dependsOn(commonTest)
         }
         
         macosTargets.forEach { target ->
@@ -93,7 +102,7 @@ kotlin {
                 dependsOn(macosMain)
             }
             
-            target.compilations["test"].defaultSourceSet.dependsOn(nativeTest)
+            target.compilations["test"].defaultSourceSet.dependsOn(commonTest)
         }
         
         all {
