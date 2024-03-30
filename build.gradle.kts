@@ -52,7 +52,6 @@ kotlin {
             dependsOn(commonMain)
             dependsOn(nativeMain)
         }
-        val linuxTest by creating
         val linuxArm64Main by getting {
             dependsOn(linuxMain)
         }
