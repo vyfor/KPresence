@@ -2,7 +2,6 @@ package io.github.reblast.kpresence
 
 import io.github.reblast.kpresence.rpc.*
 import io.github.reblast.kpresence.utils.epochMillis
-import kotlin.system.exitProcess
 import kotlin.test.Test
 
 class ClientTest {
@@ -16,24 +15,24 @@ class ClientTest {
     }
     
     while (true) {
-      readln().apply {
-        if (this == "shutdown") {
-          client.shutdown()
-          exitProcess(0)
-        }
-
-        if (this == "clear") {
-          client.clear()
-          return@apply
-        }
-        
-        client.update(
-          activity {
-            details = this@apply
-            state = "KPresence"
-          }
-        )
+      val input = readln()
+      
+      if (input == "shutdown") {
+        client.shutdown()
+        break
       }
+      
+      if (input == "clear") {
+        client.clear()
+        continue
+      }
+      
+      client.update(
+        activity {
+          details = input
+          state = "KPresence"
+        }
+      )
     }
   }
   

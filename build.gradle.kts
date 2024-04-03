@@ -1,6 +1,8 @@
 import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.KotlinMultiplatform
 import com.vanniktech.maven.publish.SonatypeHost
+import org.jetbrains.kotlin.gradle.targets.jvm.KotlinJvmTestRun
+import org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest
 
 plugins {
     kotlin("multiplatform") version "1.9.22"
@@ -18,7 +20,13 @@ repositories {
 }
 
 kotlin {
-    val jvmTarget = jvm()
+    val jvmTarget = jvm {
+        compilations.all {
+            kotlinOptions {
+                jvmTarget = "1.8"
+            }
+        }
+    }
     val mingwTarget = mingwX64()
     val linuxTargets = listOf(
         linuxArm64(),
@@ -108,6 +116,14 @@ kotlin {
         all {
             languageSettings.optIn("kotlinx.cinterop.ExperimentalForeignApi")
         }
+        
+        targets.all {
+            compilations.all {
+                kotlinOptions {
+                    kotlinOptions.freeCompilerArgs += "-Xexpect-actual-classes"
+                }
+            }
+        }
     }
 }
 
@@ -124,7 +140,7 @@ mavenPublishing {
     pom {
         name.set("kpresence")
         description.set("A lightweight, cross-platform Kotlin library for Discord Rich Presence interaction.")
-        url.set("https://github.com/reblast/KPresence")
+        url.set("https://github.com/vyfor/KPresence")
         inceptionYear.set("2024")
         licenses {
             license {
@@ -134,19 +150,19 @@ mavenPublishing {
         }
         developers {
             developer {
-                id.set("reblast")
+                id.set("vyfor")
                 name.set("axeon")
-                url.set("https://github.com/reblast/")
+                url.set("https://github.com/vyfor/")
             }
         }
         scm {
-            url.set("https://github.com/reblast/KPresence/")
-            connection.set("scm:git:git://github.com/reblast/KPresence.git")
-            developerConnection.set("scm:git:ssh://git@github.com/reblast/KPresence.git")
+            url.set("https://github.com/vyfor/KPresence/")
+            connection.set("scm:git:git://github.com/vyfor/KPresence.git")
+            developerConnection.set("scm:git:ssh://git@github.com/vyfor/KPresence.git")
         }
         issueManagement {
             system.set("Github")
-            url.set("https://github.com/reblast/KPresence/issues")
+            url.set("https://github.com/vyfor/KPresence/issues")
         }
     }
     

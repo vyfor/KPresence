@@ -1,13 +1,15 @@
 package io.github.reblast.kpresence.ipc
 
+import io.github.reblast.kpresence.utils.putInt
 import io.github.reblast.kpresence.utils.reverseBytes
 import java.io.FileNotFoundException
+import java.io.InputStream
+import java.io.OutputStream
 import java.io.RandomAccessFile
 import java.lang.System.getenv
+import java.net.Proxy
+import java.net.Socket
 import java.net.UnixDomainSocketAddress
-import java.nio.ByteBuffer
-import java.nio.channels.FileChannel
-import java.nio.channels.SocketChannel
 
 actual class Connection {
   private val con =
@@ -39,13 +41,13 @@ actual class Connection {
     fun close()
   }
   
-  internal class WindowsConnection(): IConnection {
-    private var pipe: FileChannel? = null
+  internal class WindowsConnection: IConnection {
+    private var pipe: RandomAccessFile? = null
     
     override fun open() {
       for (i in 0..9) {
         try {
-          pipe = RandomAccessFile("\\\\.\\pipe\\discord-ipc-$i", "rw").channel
+          pipe = RandomAccessFile("\\\\.\\pipe\\discord-ipc-$i", "rw")
           return
         } catch (_: FileNotFoundException) {}
       }
@@ -54,28 +56,23 @@ actual class Connection {
     }
     
     override fun read(bufferSize: Int): ByteArray {
-      pipe?.run {
-        val buffer = ByteBuffer.allocate(bufferSize)
-        
-        pipe!!.read(buffer)
-        return ByteArray(buffer.remaining())
+      pipe?.let { stream ->
+        val buffer = ByteArray(bufferSize)
+        stream.read(buffer, 0, bufferSize)
+        return buffer
       } ?: throw IllegalStateException("Not connected")
     }
     
     override fun write(opcode: Int, data: String) {
-      pipe?.apply {
+      pipe?.let { stream ->
         val bytes = data.encodeToByteArray()
-        val buffer = ByteBuffer.allocate(bytes.size + 8)
+        val buffer = ByteArray(bytes.size + 8)
         
         buffer.putInt(opcode.reverseBytes())
-        buffer.putInt(4, bytes.size.reverseBytes())
-        buffer.position(8)
-        buffer.put(bytes)
+        buffer.putInt(bytes.size.reverseBytes(), 4)
+        bytes.copyInto(buffer, 8)
         
-        val bytesWritten = write(buffer)
-        if (bytesWritten < 0) {
-          throw RuntimeException("Error writing to socket")
-        }
+        stream.write(buffer)
       } ?: throw IllegalStateException("Not connected")
     }
     
@@ -84,8 +81,10 @@ actual class Connection {
     }
   }
   
-  internal class UnixConnection(): IConnection {
-    private var pipe: SocketChannel? = null
+  internal class UnixConnection: IConnection {
+    private var pipe: Socket? = null
+    private var inputStream: InputStream? = null
+    private var outputStream: OutputStream? = null
     
     override fun open() {
       val dir =
@@ -97,7 +96,10 @@ actual class Connection {
       
       for (i in 0..9) {
         try {
-          pipe = SocketChannel.open(UnixDomainSocketAddress.of("$dir/discord-ipc-$i"))
+          pipe = Socket(Proxy.NO_PROXY)
+          pipe!!.connect(UnixDomainSocketAddress.of("$dir/discord-ipc-$i"))
+          inputStream = pipe!!.getInputStream()
+          outputStream = pipe!!.getOutputStream()
           return
         } catch (_: FileNotFoundException) {}
       }
@@ -106,33 +108,30 @@ actual class Connection {
     }
     
     override fun read(bufferSize: Int): ByteArray {
-      pipe?.run {
-        val buffer = ByteBuffer.allocate(bufferSize)
-        
-        pipe!!.read(buffer)
-        return ByteArray(buffer.remaining())
+      inputStream?.let { stream ->
+        val buffer = ByteArray(bufferSize)
+        stream.read(buffer, 0, bufferSize)
+        return buffer
       } ?: throw IllegalStateException("Not connected")
     }
     
     override fun write(opcode: Int, data: String) {
-      pipe?.apply {
+      outputStream?.let { stream ->
         val bytes = data.encodeToByteArray()
-        val buffer = ByteBuffer.allocate(bytes.size + 8)
+        val buffer = ByteArray(bytes.size + 8)
         
         buffer.putInt(opcode.reverseBytes())
-        buffer.putInt(4, bytes.size.reverseBytes())
-        buffer.position(8)
-        buffer.put(bytes)
+        buffer.putInt(bytes.size.reverseBytes(), 4)
+        bytes.copyInto(buffer, 8)
         
-        val bytesWritten = write(buffer)
-        if (bytesWritten < 0) {
-          throw RuntimeException("Error writing to socket")
-        }
+        stream.write(buffer)
       } ?: throw IllegalStateException("Not connected")
     }
     
     override fun close() {
       pipe?.close()
+      inputStream?.close()
+      outputStream?.close()
     }
   }
 }
