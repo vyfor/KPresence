@@ -94,14 +94,14 @@ actual class Connection {
          getenv("TEMP")) ?:
         "/tmp"
       
+      pipe = Socket(Proxy.NO_PROXY)
       for (i in 0..9) {
         try {
-          pipe = Socket(Proxy.NO_PROXY)
           pipe!!.connect(UnixDomainSocketAddress.of("$dir/discord-ipc-$i"))
           inputStream = pipe!!.getInputStream()
           outputStream = pipe!!.getOutputStream()
           return
-        } catch (_: FileNotFoundException) {}
+        } catch (_: Exception) {}
       }
       
       throw RuntimeException("Could not connect to the pipe!")
