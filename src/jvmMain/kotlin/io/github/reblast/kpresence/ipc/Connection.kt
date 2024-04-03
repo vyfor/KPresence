@@ -49,7 +49,7 @@ actual class Connection {
         try {
           pipe = RandomAccessFile("\\\\.\\pipe\\discord-ipc-$i", "rw")
           return
-        } catch (_: FileNotFoundException) {}
+        } catch (_: Exception) {}
       }
       
       throw RuntimeException("Could not connect to the pipe!")
