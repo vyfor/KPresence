@@ -1,0 +1,57 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    name: Build and Publish
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.head_commit.message, '#skip') }}
+
+    strategy:
+      fail-fast: true
+      matrix:
+        platform: [jvm, mingw, linux, macos]
+        arch: [arm64, x64]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '16'
+
+      - name: Build and Publish to Maven Central
+        run: |
+          if [ ${{ matrix.platform }} == "jvm" ]; then
+            ./gradlew publishJvmPublicationToMavenCentralRepository
+          elif [ ${{ matrix.platform }} == "mingw" ]; then
+            ./gradlew publishMingwX64PublicationToMavenCentralRepository
+          elif [ ${{ matrix.platform }} == "linux" ]; then
+            if [ ${{ matrix.arch }} == "arm64" ]; then
+              ./gradlew publishLinuxArm64PublicationToMavenCentralRepository
+            elif [ ${{ matrix.arch }} == "x64" ]; then
+              ./gradlew publishLinuxX64PublicationToMavenCentralRepository
+            fi
+          elif [ ${{ matrix.platform }} == "macos" ]; then
+            if [ ${{ matrix.arch }} == "arm64" ]; then
+              ./gradlew publishMacosArm64PublicationToMavenCentralRepository
+            elif [ ${{ matrix.arch }} == "x64" ]; then
+              ./gradlew publishMacosX64PublicationToMavenCentralRepository
+            fi
+          fi
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SONATYPE_NEXUS_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.SONATYPE_NEXUS_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_PRIVATE_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_PASSWORD }}
