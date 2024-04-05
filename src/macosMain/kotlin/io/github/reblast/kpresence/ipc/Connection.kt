@@ -6,7 +6,7 @@ import kotlinx.cinterop.*
 import platform.osx.sockaddr_un
 import platform.posix.*
 
-actual class Connection {
+actual class Connection actual constructor(pipePath: String?) {
   private var pipe = -1
   
   actual fun open() {

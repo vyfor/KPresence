@@ -11,12 +11,12 @@ import java.net.Proxy
 import java.net.Socket
 import java.net.UnixDomainSocketAddress
 
-actual class Connection {
+actual class Connection actual constructor(pipePath: String?) {
   private val con =
     if (System.getProperty("os.name").lowercase().startsWith("windows"))
       WindowsConnection()
     else
-      UnixConnection()
+      UnixConnection(pipePath)
   
   actual fun open() {
     con.open()
@@ -81,7 +81,7 @@ actual class Connection {
     }
   }
   
-  internal class UnixConnection: IConnection {
+  internal class UnixConnection(private val pipePath: String?): IConnection {
     private var pipe: Socket? = null
     private var inputStream: InputStream? = null
     private var outputStream: OutputStream? = null
@@ -97,7 +97,7 @@ actual class Connection {
       pipe = Socket(Proxy.NO_PROXY)
       for (i in 0..9) {
         try {
-          pipe!!.connect(UnixDomainSocketAddress.of("$dir/discord-ipc-$i"))
+          pipe!!.connect(UnixDomainSocketAddress.of(pipePath ?: "$dir/discord-ipc-$i"))
           inputStream = pipe!!.getInputStream()
           outputStream = pipe!!.getOutputStream()
           return
