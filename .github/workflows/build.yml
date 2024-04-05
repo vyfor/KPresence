@@ -18,7 +18,7 @@ jobs:
       fail-fast: true
       matrix:
 #        target: [jvm, mingw, linuxArm64, linuxX64, macosArm64, macosX64]
-        target: [macosX64]
+        os: [windows-latest, ubuntu-latest, macos-latest]
 
     runs-on: ${{ matrix.os }}
     steps:
