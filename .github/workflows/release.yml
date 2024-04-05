@@ -1,0 +1,67 @@
+name: Release
+
+permissions:
+  contents: read
+
+on:
+  push:
+    tags:
+      - v*
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    name: Publish
+    if: ${{ !contains(github.event.head_commit.message, '#skip') }}
+
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - target: windows
+            os: windows-latest
+          - target: linux
+            os: ubuntu-latest
+          - target: macos
+            os: macos-latest
+          - target: jvm
+            os: ubuntu-latest
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '16'
+
+      - uses: gradle/actions/setup-gradle@v3
+
+      - name: Publish to Maven Central
+        run: |
+          if [ ${{ matrix.target }} == jvm ]; then
+            ./gradlew publishJvmPublicationToMavenCentral
+          else
+            case ${{ matrix.os }} in
+              windows-latest)
+              ./gradlew publishMingwPublicationToMavenCentral
+              ;;
+              ubuntu-latest)
+              ./gradlew publishLinuxX64PublicationToMavenCentral publishLinuxArm64PublicationToMavenCentral publishJvmPublicationToMavenCentral
+              ;;
+              macos-latest)
+              ./gradlew publishMacosX64PublicationToMavenCentral publishMacosArm64PublicationToMavenCentral
+              ;;
+            esac
+          fi
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SONATYPE_NEXUS_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.SONATYPE_NEXUS_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_PRIVATE_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_PASSWORD }}

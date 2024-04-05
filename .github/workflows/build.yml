@@ -1,9 +1,9 @@
 name: Build
 
-on:
-  push:
-    branches:
-      - master
+permissions:
+  contents: read
+
+on: [push, pull_request]
 
 defaults:
   run:
@@ -11,11 +11,10 @@ defaults:
 
 jobs:
   build:
-    name: Build and Publish
-    if: ${{ !contains(github.event.head_commit.message, '#skip') }}
+    name: Build
 
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
 
@@ -30,19 +29,9 @@ jobs:
           distribution: 'zulu'
           java-version: '16'
 
-      - name: Build and Publish to Maven Central
-        run: |
-          case ${{ matrix.os }} in
-            windows-latest)
-            ./gradlew publishMingwPublicationToMavenCentral
-            ;;
-            ubuntu-latest)
-            ./gradlew publishLinuxX64PublicationToMavenCentral publishLinuxArm64PublicationToMavenCentral publishJvmPublicationToMavenCentral
-            ;;
-            macos-latest)
-            ./gradlew publishMacosX64PublicationToMavenCentral publishMacosArm64PublicationToMavenCentral
-            ;;
-          esac
+      - name: Build Project
+        run: ./gradlew build -x test
+
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SONATYPE_NEXUS_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.SONATYPE_NEXUS_PASSWORD }}
