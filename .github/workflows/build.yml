@@ -17,7 +17,6 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-#        target: [jvm, mingw, linuxArm64, linuxX64, macosArm64, macosX64]
         os: [windows-latest, ubuntu-latest, macos-latest]
 
     runs-on: ${{ matrix.os }}
@@ -33,27 +32,17 @@ jobs:
 
       - name: Build and Publish to Maven Central
         run: |
-          ./gradlew tasks
-#          case ${{ matrix.target }} in
-#            jvm)
-#            ./gradlew publishJvmPublicationToMavenCentral
-#            ;;
-#            mingw)
-#            ./gradlew publishMingwPublicationToMavenCentral
-#            ;;
-#            linuxArm64)
-#            ./gradlew publishLinuxArm64PublicationToMavenCentral
-#            ;;
-#            linuxX64)
-#            ./gradlew publishLinuxX64PublicationToMavenCentral
-#            ;;
-#            macosArm64)
-#            ./gradlew publishMacosArm64PublicationToMavenCentral
-#            ;;
-#            macosX64)
-#            ./gradlew publishMacosX64PublicationToMavenCentral
-#            ;;
-#          esac
+          case ${{ matrix.os }} in
+            windows-latest)
+            ./gradlew publishMingwPublicationToMavenCentral
+            ;;
+            ubuntu-latest)
+            ./gradlew publishLinuxX64PublicationToMavenCentral publishLinuxArm64PublicationToMavenCentral publishJvmPublicationToMavenCentral
+            ;;
+            macos-latest)
+            ./gradlew publishMacosX64PublicationToMavenCentral publishMacosArm64PublicationToMavenCentral
+            ;;
+          esac
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SONATYPE_NEXUS_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.SONATYPE_NEXUS_PASSWORD }}
