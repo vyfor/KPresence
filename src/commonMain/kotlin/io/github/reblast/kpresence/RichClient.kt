@@ -16,7 +16,7 @@ import kotlinx.serialization.json.Json
  * Manages client connections and activity updates for Discord presence.
  * @property clientId The Discord application client ID.
  */
-class RichClient(val clientId: Long) {
+class RichClient(var clientId: Long) {
   var state = State.DISCONNECTED
     private set
   
