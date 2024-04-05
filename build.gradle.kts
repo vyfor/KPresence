@@ -1,6 +1,8 @@
 import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.KotlinMultiplatform
 import com.vanniktech.maven.publish.SonatypeHost
+import org.jetbrains.kotlin.gradle.targets.jvm.KotlinJvmTestRun
+import org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest
 
 plugins {
     kotlin("multiplatform") version "1.9.22"
@@ -11,13 +13,22 @@ plugins {
 }
 
 group = "io.github.reblast"
-version = "0.4.0"
+version = "0.5.0"
 
 repositories {
     mavenCentral()
 }
 
 kotlin {
+    val jvmTarget = jvm {
+        compilations.all {
+            kotlinOptions {
+                jvmTarget = "16"
+            }
+        }
+        
+        jvmToolchain(16)
+    }
     val mingwTarget = mingwX64()
     val linuxTargets = listOf(
         linuxArm64(),
@@ -29,20 +40,20 @@ kotlin {
     )
     
     sourceSets {
-        val commonMain by getting
-        val nativeMain by creating {
-            dependsOn(commonMain)
-            
+        val commonMain by getting {
             dependencies {
                 implementation(kotlin("stdlib"))
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
             }
         }
-        val nativeTest by creating {
+        val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
             }
+        }
+        val nativeMain by creating {
+            dependsOn(commonMain)
         }
         val mingwX64Main by getting {
             dependsOn(commonMain)
@@ -69,13 +80,21 @@ kotlin {
             dependsOn(macosMain)
         }
         
+        jvmTarget.apply {
+            compilations["main"].defaultSourceSet.apply {
+                dependsOn(commonMain)
+            }
+            
+            compilations["test"].defaultSourceSet.dependsOn(commonTest)
+        }
+        
         mingwTarget.apply {
             compilations["main"].defaultSourceSet.apply {
                 dependsOn(nativeMain)
                 dependsOn(mingwX64Main)
             }
             
-            compilations["test"].defaultSourceSet.dependsOn(nativeTest)
+            compilations["test"].defaultSourceSet.dependsOn(commonTest)
         }
         
         linuxTargets.forEach { target ->
@@ -84,7 +103,7 @@ kotlin {
                 dependsOn(linuxMain)
             }
             
-            target.compilations["test"].defaultSourceSet.dependsOn(nativeTest)
+            target.compilations["test"].defaultSourceSet.dependsOn(commonTest)
         }
         
         macosTargets.forEach { target ->
@@ -93,11 +112,19 @@ kotlin {
                 dependsOn(macosMain)
             }
             
-            target.compilations["test"].defaultSourceSet.dependsOn(nativeTest)
+            target.compilations["test"].defaultSourceSet.dependsOn(commonTest)
         }
         
         all {
             languageSettings.optIn("kotlinx.cinterop.ExperimentalForeignApi")
+        }
+        
+        targets.all {
+            compilations.all {
+                kotlinOptions {
+                    kotlinOptions.freeCompilerArgs += "-Xexpect-actual-classes"
+                }
+            }
         }
     }
 }
@@ -115,7 +142,7 @@ mavenPublishing {
     pom {
         name.set("kpresence")
         description.set("A lightweight, cross-platform Kotlin library for Discord Rich Presence interaction.")
-        url.set("https://github.com/reblast/KPresence")
+        url.set("https://github.com/vyfor/KPresence")
         inceptionYear.set("2024")
         licenses {
             license {
@@ -125,19 +152,19 @@ mavenPublishing {
         }
         developers {
             developer {
-                id.set("reblast")
+                id.set("vyfor")
                 name.set("axeon")
-                url.set("https://github.com/reblast/")
+                url.set("https://github.com/vyfor/")
             }
         }
         scm {
-            url.set("https://github.com/reblast/KPresence/")
-            connection.set("scm:git:git://github.com/reblast/KPresence.git")
-            developerConnection.set("scm:git:ssh://git@github.com/reblast/KPresence.git")
+            url.set("https://github.com/vyfor/KPresence/")
+            connection.set("scm:git:git://github.com/vyfor/KPresence.git")
+            developerConnection.set("scm:git:ssh://git@github.com/vyfor/KPresence.git")
         }
         issueManagement {
             system.set("Github")
-            url.set("https://github.com/reblast/KPresence/issues")
+            url.set("https://github.com/vyfor/KPresence/issues")
         }
     }
     

@@ -8,3 +8,5 @@ actual fun epochMillis(): Long = memScoped {
   gettimeofday(timeVal.ptr, null)
   (timeVal.tv_sec * 1000) + (timeVal.tv_usec / 1000)
 }
+
+actual fun getProcessId(): Int = getpid()
