@@ -1,19 +1,22 @@
 # 🧩 KPresence
 
-**📦 A lightweight, cross-platform [Kotlin/Native](https://kotlinlang.org/docs/native-overview.html) library for interacting with Discord Rich Presence.**
+**📦 A lightweight, cross-platform [Kotlin Multiplatform](https://kotlinlang.org/docs/multiplatform.html) library for interacting with Discord Rich Presence.**
 
 ## 💎 Features
 - Cross-platform compatibility (Windows, Linux, macOS*)
 - Fast and user-friendly, featuring DSL support
-- Independent of JVM, written entirely in pure Kotlin/Native
+- Provides both JVM and Native implementations
 - Respects the ratelimit of one update per 15 seconds. The library will always send the newest presence update once the client is free to do so
 - Validates the activity fields before sending them
+
+## 🔌 Requirements
+- **Java**: `16 or later` (only for use within the JVM environment)
 
 ## ⚙️ Installation
 
 ```gradle
 dependencies {
-    implementation("io.github.reblast:kpresence:0.3.0")
+    implementation("io.github.reblast:kpresence:0.5.0")
 }
 ```
 
