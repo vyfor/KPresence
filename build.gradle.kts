@@ -13,7 +13,7 @@ plugins {
 }
 
 group = "io.github.reblast"
-version = "0.4.0"
+version = "0.5.0"
 
 repositories {
     mavenCentral()
@@ -23,9 +23,11 @@ kotlin {
     val jvmTarget = jvm {
         compilations.all {
             kotlinOptions {
-                jvmTarget = "1.8"
+                jvmTarget = "16"
             }
         }
+        
+        jvmToolchain(16)
     }
     val mingwTarget = mingwX64()
     val linuxTargets = listOf(
