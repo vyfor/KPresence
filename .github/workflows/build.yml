@@ -27,7 +27,7 @@ jobs:
       - name: Setup JDK
         uses: actions/setup-java@v4
         with:
-          distribution: 'adept'
+          distribution: 'zulu'
           java-version: '16'
 
       - name: Build and Publish to Maven Central
