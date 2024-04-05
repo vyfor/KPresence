@@ -12,7 +12,6 @@ defaults:
 jobs:
   build:
     name: Build and Publish
-    runs-on: ubuntu-latest
     if: ${{ !contains(github.event.head_commit.message, '#skip') }}
 
     strategy:
@@ -21,6 +20,7 @@ jobs:
 #        target: [jvm, mingw, linuxArm64, linuxX64, macosArm64, macosX64]
         target: [macosX64]
 
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
