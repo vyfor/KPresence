@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - master
-  pull_request:
 
 defaults:
   run:
@@ -19,8 +18,15 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        platform: [jvm, mingw, linux, macos]
-        arch: [arm64, x64]
+        include:
+          - platform: jvm
+            arch: x64
+          - platform: mingw
+            arch: x64
+          - platform: linux
+            arch: [ x64, arm64 ]
+          - platform: macos
+            arch: [ x64, arm64 ]
 
     steps:
       - name: Checkout
