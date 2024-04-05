@@ -16,11 +16,11 @@ import kotlinx.serialization.json.Json
  * Manages client connections and activity updates for Discord presence.
  * @property clientId The Discord application client ID.
  */
-class RichClient(val clientId: Long, private val pipePath: String? = null) {
+class RichClient(val clientId: Long) {
   var state = State.DISCONNECTED
     private set
   
-  private val connection = Connection(pipePath)
+  private val connection = Connection()
   private val clientScope = CoroutineScope(Dispatchers.IO)
   private var lastActivity: Activity? = null
   private var lastUpdated = 0L

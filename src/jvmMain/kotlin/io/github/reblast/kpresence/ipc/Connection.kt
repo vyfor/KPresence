@@ -2,21 +2,20 @@ package io.github.reblast.kpresence.ipc
 
 import io.github.reblast.kpresence.utils.putInt
 import io.github.reblast.kpresence.utils.reverseBytes
-import java.io.FileNotFoundException
 import java.io.InputStream
 import java.io.OutputStream
 import java.io.RandomAccessFile
 import java.lang.System.getenv
-import java.net.Proxy
-import java.net.Socket
 import java.net.UnixDomainSocketAddress
+import java.nio.channels.Channels
+import java.nio.channels.SocketChannel
 
-actual class Connection actual constructor(pipePath: String?) {
+actual class Connection {
   private val con =
     if (System.getProperty("os.name").lowercase().startsWith("windows"))
       WindowsConnection()
     else
-      UnixConnection(pipePath)
+      UnixConnection()
   
   actual fun open() {
     con.open()
@@ -81,8 +80,8 @@ actual class Connection actual constructor(pipePath: String?) {
     }
   }
   
-  internal class UnixConnection(private val pipePath: String?): IConnection {
-    private var pipe: Socket? = null
+  internal class UnixConnection: IConnection {
+    private var pipe: SocketChannel? = null
     private var inputStream: InputStream? = null
     private var outputStream: OutputStream? = null
     
@@ -94,12 +93,11 @@ actual class Connection actual constructor(pipePath: String?) {
          getenv("TEMP")) ?:
         "/tmp"
       
-      pipe = Socket(Proxy.NO_PROXY)
       for (i in 0..9) {
         try {
-          pipe!!.connect(UnixDomainSocketAddress.of(pipePath ?: "$dir/discord-ipc-$i"))
-          inputStream = pipe!!.getInputStream()
-          outputStream = pipe!!.getOutputStream()
+          pipe = SocketChannel.open(UnixDomainSocketAddress.of("$dir/discord-ipc-$i"))
+          inputStream = Channels.newInputStream(pipe!!)
+          outputStream = Channels.newOutputStream(pipe!!)
           return
         } catch (_: Exception) {}
       }
