@@ -36,4 +36,4 @@ jobs:
           key: kotlin-konan-
 
       - name: Build project
-        run: ./gradlew compileKotlinJvm compileKotlinMingwX64 compileKotlinLinuxX64 compileKotlinLinuxArm64 compileKotlinMacosX64 compileKotlinMacosArmX64 --build-cache --parallel --no-daemon
+        run: ./gradlew compileKotlinJvm compileKotlinMingwX64 compileKotlinLinuxX64 compileKotlinLinuxArm64 compileKotlinMacosX64 compileKotlinMacosArm64 --build-cache --parallel --no-daemon
