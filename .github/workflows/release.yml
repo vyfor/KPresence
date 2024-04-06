@@ -14,7 +14,7 @@ defaults:
 
 jobs:
   build:
-    name: Publish
+    name: Build and Publish
     if: ${{ !contains(github.event.head_commit.message, '#skip') }}
 
     strategy:
@@ -41,25 +41,47 @@ jobs:
           distribution: 'zulu'
           java-version: '16'
 
-      - uses: gradle/actions/setup-gradle@v3
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
 
-      - name: Publish to Maven Central
+      - name: Assemble project
         run: |
           if [ ${{ matrix.target }} == jvm ]; then
-            ./gradlew publishJvmPublicationToMavenCentral
+            ./gradlew jvmJar
           else
             case ${{ matrix.os }} in
               windows-latest)
-              ./gradlew publishMingwPublicationToMavenCentral
+              ./gradlew compileKotlinMingwX64
               ;;
               ubuntu-latest)
-              ./gradlew publishLinuxX64PublicationToMavenCentral publishLinuxArm64PublicationToMavenCentral
+              ./gradlew compileKotlinLinuxX64 compileKotlinLinuxArm64
               ;;
               macos-latest)
-              ./gradlew publishMacosX64PublicationToMavenCentral publishMacosArm64PublicationToMavenCentral
+              ./gradlew compileKotlinMacosX64 compileKotlinMacosArm64
               ;;
             esac
           fi
+
+  publish:
+    name: Publish
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '16'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Publish to Maven Central
+        run: ./gradlew publishAllJvmPublicationsToMavenCentralRepository
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SONATYPE_NEXUS_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.SONATYPE_NEXUS_PASSWORD }}

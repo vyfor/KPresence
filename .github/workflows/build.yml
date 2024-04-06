@@ -39,7 +39,7 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v3
 
-      - name: Publish to Maven Central
+      - name: Build project
         run: |
           if [ ${{ matrix.target }} == jvm ]; then
             ./gradlew compileKotlinJvm
