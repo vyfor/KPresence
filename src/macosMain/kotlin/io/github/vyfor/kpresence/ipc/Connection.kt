@@ -1,7 +1,7 @@
-package io.github.reblast.kpresence.ipc
+package io.github.vyfor.kpresence.ipc
 
-import io.github.reblast.kpresence.utils.putInt
-import io.github.reblast.kpresence.utils.reverseBytes
+import io.github.vyfor.kpresence.utils.putInt
+import io.github.vyfor.kpresence.utils.reverseBytes
 import kotlinx.cinterop.*
 import platform.osx.sockaddr_un
 import platform.posix.*

@@ -1,6 +1,6 @@
 @file:Suppress("ArrayInDataClass", "unused")
 
-package io.github.reblast.kpresence.rpc
+package io.github.vyfor.kpresence.rpc
 
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName

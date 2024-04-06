@@ -1,4 +1,4 @@
-package io.github.reblast.kpresence.ipc
+package io.github.vyfor.kpresence.ipc
 
 expect class Connection() {
   fun open()

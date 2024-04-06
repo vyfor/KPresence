@@ -1,6 +1,6 @@
 @file:Suppress("unused")
 
-package io.github.reblast.kpresence.utils
+package io.github.vyfor.kpresence.utils
 
 import kotlinx.cinterop.*
 import platform.posix.*

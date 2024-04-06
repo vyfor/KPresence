@@ -1,7 +1,7 @@
-package io.github.reblast.kpresence
+package io.github.vyfor.kpresence
 
-import io.github.reblast.kpresence.rpc.*
-import io.github.reblast.kpresence.utils.epochMillis
+import io.github.vyfor.kpresence.rpc.*
+import io.github.vyfor.kpresence.utils.epochMillis
 import kotlin.test.Test
 
 class ClientTest {

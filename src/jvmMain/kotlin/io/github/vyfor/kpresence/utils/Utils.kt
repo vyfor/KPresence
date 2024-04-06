@@ -1,6 +1,6 @@
 @file:JvmName("Utils")
 
-package io.github.reblast.kpresence.utils
+package io.github.vyfor.kpresence.utils
 
 actual fun epochMillis(): Long = System.currentTimeMillis()
 

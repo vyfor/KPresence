@@ -1,6 +1,6 @@
-package io.github.reblast.kpresence
+package io.github.vyfor.kpresence
 
-import io.github.reblast.kpresence.rpc.*
+import io.github.vyfor.kpresence.rpc.*
 import kotlin.random.Random
 import kotlin.test.Test
 

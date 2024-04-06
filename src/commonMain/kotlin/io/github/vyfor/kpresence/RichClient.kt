@@ -1,13 +1,13 @@
 @file:Suppress("MemberVisibilityCanBePrivate", "unused")
 
-package io.github.reblast.kpresence
+package io.github.vyfor.kpresence
 
-import io.github.reblast.kpresence.ipc.*
-import io.github.reblast.kpresence.rpc.Activity
-import io.github.reblast.kpresence.rpc.Packet
-import io.github.reblast.kpresence.rpc.PacketArgs
-import io.github.reblast.kpresence.utils.epochMillis
-import io.github.reblast.kpresence.utils.getProcessId
+import io.github.vyfor.kpresence.ipc.*
+import io.github.vyfor.kpresence.rpc.Activity
+import io.github.vyfor.kpresence.rpc.Packet
+import io.github.vyfor.kpresence.rpc.PacketArgs
+import io.github.vyfor.kpresence.utils.epochMillis
+import io.github.vyfor.kpresence.utils.getProcessId
 import kotlinx.coroutines.*
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json

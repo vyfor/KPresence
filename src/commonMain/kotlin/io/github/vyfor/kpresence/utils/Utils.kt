@@ -1,4 +1,4 @@
-package io.github.reblast.kpresence.utils
+package io.github.vyfor.kpresence.utils
 
 internal fun ByteArray.putInt(value: Int, offset: Int = 0) {
   this[offset] = (value shr 24).toByte()

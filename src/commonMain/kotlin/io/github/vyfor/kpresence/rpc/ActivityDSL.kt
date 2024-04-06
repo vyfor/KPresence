@@ -1,6 +1,6 @@
 @file:Suppress("unused", "MemberVisibilityCanBePrivate")
 
-package io.github.reblast.kpresence.rpc
+package io.github.vyfor.kpresence.rpc
 
 @DslMarker
 annotation class ActivityDSL

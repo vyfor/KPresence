@@ -16,7 +16,7 @@
 
 ```gradle
 dependencies {
-    implementation("io.github.reblast:kpresence:0.5.0")
+    implementation("io.github.vyfor:kpresence:0.5.0")
 }
 ```
 
