@@ -82,7 +82,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
 
       - name: Publish to Maven Central
-        run: ./gradlew publishAllJvmPublicationsToMavenCentralRepository
+        run: ./gradlew publishAllPublicationsToMavenCentralRepository
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SONATYPE_NEXUS_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.SONATYPE_NEXUS_PASSWORD }}
