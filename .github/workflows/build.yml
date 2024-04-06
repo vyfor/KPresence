@@ -10,23 +10,11 @@ defaults:
     shell: bash
 
 jobs:
+jobs:
   build:
     name: Build
+    runs-on: macos-latest
 
-    strategy:
-      fail-fast: true
-      matrix:
-        include:
-          - target: windows
-            os: windows-latest
-          - target: linux
-            os: ubuntu-latest
-          - target: macos
-            os: macos-latest
-          - target: jvm
-            os: ubuntu-latest
-
-    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -37,22 +25,8 @@ jobs:
           distribution: 'zulu'
           java-version: '16'
 
-      - uses: gradle/actions/setup-gradle@v3
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
 
       - name: Build project
-        run: |
-          if [ ${{ matrix.target }} == jvm ]; then
-            ./gradlew compileKotlinJvm
-          else
-            case ${{ matrix.os }} in
-              windows-latest)
-              ./gradlew compileKotlinMingwX64
-              ;;
-              ubuntu-latest)
-              ./gradlew compileKotlinLinuxX64
-              ;;
-              macos-latest)
-              ./gradlew compileKotlinMacosX64
-              ;;
-            esac
-          fi
+        run: ./gradlew compileKotlinJvm compileKotlinMingwX64 compileKotlinLinuxX64 compileKotlinLinuxArm64 compileKotlinMacosX64 compileKotlinMacosArmX64
