@@ -53,7 +53,7 @@ jobs:
               ./gradlew publishMingwPublicationToMavenCentral
               ;;
               ubuntu-latest)
-              ./gradlew publishLinuxX64PublicationToMavenCentral publishLinuxArm64PublicationToMavenCentral publishJvmPublicationToMavenCentral
+              ./gradlew publishLinuxX64PublicationToMavenCentral publishLinuxArm64PublicationToMavenCentral
               ;;
               macos-latest)
               ./gradlew publishMacosX64PublicationToMavenCentral publishMacosArm64PublicationToMavenCentral

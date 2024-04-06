@@ -14,9 +14,17 @@ jobs:
     name: Build
 
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        include:
+          - target: windows
+            os: windows-latest
+          - target: linux
+            os: ubuntu-latest
+          - target: macos
+            os: macos-latest
+          - target: jvm
+            os: ubuntu-latest
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -29,11 +37,22 @@ jobs:
           distribution: 'zulu'
           java-version: '16'
 
-      - name: Build Project
-        run: ./gradlew build -x test
+      - uses: gradle/actions/setup-gradle@v3
 
-        env:
-          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SONATYPE_NEXUS_USERNAME }}
-          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.SONATYPE_NEXUS_PASSWORD }}
-          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_PRIVATE_KEY }}
-          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_PASSWORD }}
+      - name: Publish to Maven Central
+        run: |
+          if [ ${{ matrix.target }} == jvm ]; then
+            ./gradlew compileKotlinJvm
+          else
+            case ${{ matrix.os }} in
+              windows-latest)
+              ./gradlew compileKotlinMingwX64
+              ;;
+              ubuntu-latest)
+              ./gradlew compileKotlinLinuxX64
+              ;;
+              macos-latest)
+              ./gradlew compileKotlinMacosX64
+              ;;
+            esac
+          fi
