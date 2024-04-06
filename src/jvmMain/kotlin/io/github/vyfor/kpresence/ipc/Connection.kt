@@ -2,6 +2,7 @@ package io.github.vyfor.kpresence.ipc
 
 import io.github.vyfor.kpresence.utils.putInt
 import io.github.vyfor.kpresence.utils.reverseBytes
+import java.io.EOFException
 import java.io.InputStream
 import java.io.OutputStream
 import java.io.RandomAccessFile
@@ -21,8 +22,8 @@ actual class Connection {
     con.open()
   }
   
-  actual fun read(bufferSize: Int): ByteArray {
-    return con.read(bufferSize)
+  actual fun read(): ByteArray {
+    return con.read()
   }
   
   actual fun write(opcode: Int, data: String) {
@@ -35,7 +36,7 @@ actual class Connection {
   
   interface IConnection {
     fun open()
-    fun read(bufferSize: Int): ByteArray
+    fun read(): ByteArray
     fun write(opcode: Int, data: String)
     fun close()
   }
@@ -54,10 +55,13 @@ actual class Connection {
       throw RuntimeException("Could not connect to the pipe!")
     }
     
-    override fun read(bufferSize: Int): ByteArray {
+    override fun read(): ByteArray {
       pipe?.let { stream ->
-        val buffer = ByteArray(bufferSize)
-        stream.read(buffer, 0, bufferSize)
+        stream.readInt()
+        val length = stream.readInt().reverseBytes()
+        val buffer = ByteArray(length)
+        
+        stream.read(buffer, 0, length)
         return buffer
       } ?: throw IllegalStateException("Not connected")
     }
@@ -105,10 +109,13 @@ actual class Connection {
       throw RuntimeException("Could not connect to the pipe!")
     }
     
-    override fun read(bufferSize: Int): ByteArray {
+    override fun read(): ByteArray {
       inputStream?.let { stream ->
-        val buffer = ByteArray(bufferSize)
-        stream.read(buffer, 0, bufferSize)
+        stream.readInt()
+        val length = stream.readInt()
+        val buffer = ByteArray(length)
+        
+        stream.read(buffer, 0, length)
         return buffer
       } ?: throw IllegalStateException("Not connected")
     }
@@ -130,6 +137,18 @@ actual class Connection {
       pipe?.close()
       inputStream?.close()
       outputStream?.close()
+    }
+    
+    private fun InputStream.readInt(): Int {
+      val ch1: Int = read()
+      val ch2: Int = read()
+      val ch3: Int = read()
+      val ch4: Int = read()
+      return if (ch1 or ch2 or ch3 or ch4 < 0) {
+        throw EOFException()
+      } else {
+        (ch1 shl 24) + (ch2 shl 16) + (ch3 shl 8) + (ch4 shl 0)
+      }
     }
   }
 }

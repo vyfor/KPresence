@@ -1,5 +1,6 @@
 package io.github.vyfor.kpresence.ipc
 
+import io.github.vyfor.kpresence.utils.byteArrayToInt
 import io.github.vyfor.kpresence.utils.putInt
 import io.github.vyfor.kpresence.utils.reverseBytes
 import kotlinx.cinterop.*
@@ -39,23 +40,15 @@ actual class Connection {
     throw RuntimeException("Could not connect to the pipe!")
   }
   
-  actual fun read(bufferSize: Int): ByteArray {
+  actual fun read(): ByteArray {
     if (pipe == -1) throw IllegalStateException("Not connected")
     
-    val buffer = ByteArray(bufferSize)
+    readBytes(4)
+    val length = readBytes(4).first.byteArrayToInt().reverseBytes()
+    val buffer = ByteArray(length)
+    val bytesRead = readBytes(4).second
     
-    val bytesRead = recv(pipe, buffer.refTo(0), bufferSize.convert(), 0).toInt()
-    if (bytesRead < 0) {
-      if (errno == EAGAIN) return buffer
-      
-      throw RuntimeException("Error reading from socket")
-    } else if (bytesRead == 0) {
-      close()
-      
-      throw RuntimeException("Connection closed")
-    }
-    
-    return buffer.copyOf(bytesRead)
+    return buffer.copyOf(bytesRead.toInt())
   }
   
   actual fun write(opcode: Int, data: String) {
@@ -78,5 +71,19 @@ actual class Connection {
   
   actual fun close() {
     close(pipe)
+  }
+  
+  private fun readBytes(size: Int): Pair<ByteArray, Long> {
+    val bytes = ByteArray(size)
+    recv(pipe, bytes.refTo(0), bytes.size.convert(), 0).let { bytesRead ->
+      if (bytesRead < 0L) {
+        if (errno == EAGAIN) return bytes to 0
+        throw RuntimeException("Error reading from socket")
+      } else if (bytesRead == 0L) {
+        close()
+        throw RuntimeException("Connection closed")
+      }
+      return bytes to bytesRead
+    }
   }
 }

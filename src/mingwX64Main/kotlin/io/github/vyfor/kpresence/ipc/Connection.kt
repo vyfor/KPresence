@@ -1,8 +1,11 @@
 package io.github.vyfor.kpresence.ipc
 
+import io.github.vyfor.kpresence.utils.byteArrayToInt
 import io.github.vyfor.kpresence.utils.putInt
 import io.github.vyfor.kpresence.utils.reverseBytes
 import kotlinx.cinterop.*
+import platform.posix.EAGAIN
+import platform.posix.errno
 import platform.windows.*
 
 actual class Connection {
@@ -22,18 +25,14 @@ actual class Connection {
     throw RuntimeException("Could not connect to the pipe!")
   }
   
-  actual fun read(bufferSize: Int): ByteArray = memScoped {
-    pipe?.let { handle ->
-      val buffer = ByteArray(bufferSize)
-      val bytesRead = alloc<UIntVar>()
+  actual fun read(): ByteArray = memScoped {
+    pipe?.let { _ ->
+      readBytes(4)
+      val length = readBytes(4).first.byteArrayToInt().reverseBytes()
+      val buffer = ByteArray(length)
+      val bytesRead = readBytes(4).second
       
-      val success = buffer.usePinned {
-        ReadFile(handle, it.addressOf(0), bufferSize.convert(), bytesRead.ptr, null)
-      }
-      
-      if (success == FALSE) throw RuntimeException("Error reading from socket")
-      
-      return buffer.copyOf(bytesRead.value.toInt())
+      return buffer.copyOf(bytesRead)
     } ?: throw IllegalStateException("Not connected")
   }
   
@@ -56,5 +55,16 @@ actual class Connection {
   
   actual fun close() {
     CloseHandle(pipe)
+  }
+  
+  private fun readBytes(size: Int): Pair<ByteArray, Int> = memScoped {
+    val bytes = ByteArray(size)
+    val bytesRead = alloc<UIntVar>()
+    ReadFile(pipe, bytes.pin().addressOf(0), size.convert(), bytesRead.ptr, null).let { success ->
+      if (success == FALSE) {
+        throw RuntimeException("Error reading from socket")
+      }
+    }
+    return bytes to bytesRead.value.toInt()
   }
 }

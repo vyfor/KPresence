@@ -14,6 +14,15 @@ internal fun Int.reverseBytes(): Int {
     (this and 0x000000ff shl 24)
 }
 
+internal fun ByteArray.byteArrayToInt(): Int {
+  require(size == 4) { "ByteArray size must be 4" }
+  
+  return (get(0).toInt() and 0xFF shl 24) or
+    (get(1).toInt() and 0xFF shl 16) or
+    (get(2).toInt() and 0xFF shl 8) or
+    (get(3).toInt() and 0xFF)
+}
+
 expect fun epochMillis(): Long
 
 expect fun getProcessId(): Int
