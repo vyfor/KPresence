@@ -12,7 +12,7 @@ plugins {
     id("com.vanniktech.maven.publish") version "0.28.0"
 }
 
-group = "io.github.reblast"
+group = "io.github.vyfor"
 version = "0.5.0"
 
 repositories {
@@ -137,7 +137,7 @@ mavenPublishing {
         )
     )
     
-    coordinates("io.github.reblast", "kpresence", project.version.toString())
+    coordinates("io.github.vyfor", "kpresence", project.version.toString())
     
     pom {
         name.set("kpresence")
@@ -153,7 +153,7 @@ mavenPublishing {
         developers {
             developer {
                 id.set("vyfor")
-                name.set("axeon")
+                name.set("vyfor")
                 url.set("https://github.com/vyfor/")
             }
         }
