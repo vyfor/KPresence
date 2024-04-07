@@ -1,5 +1,6 @@
 package io.github.vyfor.kpresence.ipc
 
+import io.github.vyfor.kpresence.exception.*
 import io.github.vyfor.kpresence.utils.byteArrayToInt
 import io.github.vyfor.kpresence.utils.putInt
 import io.github.vyfor.kpresence.utils.reverseBytes
@@ -19,7 +20,7 @@ actual class Connection {
       "/tmp"
     
     val socket = socket(AF_UNIX, SOCK_STREAM, 0)
-    if (socket == -1) throw RuntimeException("Failed to create socket")
+    if (socket == -1) throw ConnectionException(Exception(strerror(errno)?.toKString().orEmpty()))
     
     memScoped {
       for (i in 0..9) {
@@ -32,16 +33,18 @@ actual class Connection {
         if (err == 0) {
           pipe = socket
           return
+        } else if (errno != ENOENT) {
+          throw ConnectionException(Exception(strerror(errno)?.toKString().orEmpty()))
         }
       }
     }
     
     close(socket)
-    throw RuntimeException("Could not connect to the pipe!")
+    throw PipeNotFoundException()
   }
   
   actual fun read(): ByteArray {
-    if (pipe == -1) throw IllegalStateException("Not connected")
+    if (pipe == -1) throw NotConnectedException()
     
     readBytes(4)
     val length = readBytes(4).first.byteArrayToInt().reverseBytes()
@@ -52,7 +55,7 @@ actual class Connection {
   }
   
   actual fun write(opcode: Int, data: String) {
-    if (pipe == -1) throw IllegalStateException("Not connected")
+    if (pipe == -1) throw NotConnectedException()
     
     val bytes = data.encodeToByteArray()
     val buffer = ByteArray(bytes.size + 8)
@@ -65,12 +68,14 @@ actual class Connection {
     if (bytesWritten < 0) {
       close()
       
-      throw RuntimeException("Error writing to socket")
+      throw PipeWriteException(strerror(errno)?.toKString().orEmpty())
     }
   }
   
   actual fun close() {
+    shutdown(pipe, SHUT_RDWR)
     close(pipe)
+    pipe = -1
   }
   
   private fun readBytes(size: Int): Pair<ByteArray, Long> {
@@ -78,10 +83,10 @@ actual class Connection {
     recv(pipe, bytes.refTo(0), bytes.size.convert(), 0).let { bytesRead ->
       if (bytesRead < 0L) {
         if (errno == EAGAIN) return bytes to 0
-        throw RuntimeException("Error reading from socket")
+        throw PipeReadException(strerror(errno)?.toKString().orEmpty())
       } else if (bytesRead == 0L) {
         close()
-        throw RuntimeException("Connection closed")
+        throw ConnectionClosedException(strerror(errno)?.toKString().orEmpty())
       }
       return bytes to bytesRead
     }
