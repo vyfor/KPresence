@@ -32,6 +32,14 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
+      - name: Cache Konan
+        id: cache-kotlin-konan
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.konan/**/*
+          key: kotlin-konan
+
       - name: Publish to Maven Central
         run: ./gradlew publishAllPublicationsToMavenCentralRepository
         env:
