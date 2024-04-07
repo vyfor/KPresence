@@ -23,6 +23,14 @@ internal fun ByteArray.byteArrayToInt(): Int {
     (get(3).toInt() and 0xFF)
 }
 
+fun formatTime(epochMillis: Long): String {
+  val seconds = (epochMillis / 1000) % 60
+  val minutes = (epochMillis / (1000 * 60)) % 60
+  val hours = (epochMillis / (1000 * 60 * 60)) % 24
+  
+  return "${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}"
+}
+
 expect fun epochMillis(): Long
 
 expect fun getProcessId(): Int

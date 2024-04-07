@@ -4,6 +4,7 @@ package io.github.vyfor.kpresence
 
 import io.github.vyfor.kpresence.exception.InvalidClientIdException
 import io.github.vyfor.kpresence.ipc.*
+import io.github.vyfor.kpresence.logger.ILogger
 import io.github.vyfor.kpresence.rpc.Activity
 import io.github.vyfor.kpresence.rpc.Packet
 import io.github.vyfor.kpresence.rpc.PacketArgs
@@ -26,6 +27,7 @@ class RichClient(var clientId: Long) {
   private var lastActivity: Activity? = null
   private var lastUpdated = 0L
   private var updateTimer: Job? = null
+  var logger: ILogger? = null
 
   /**
    * Establishes a connection to Discord.
@@ -34,12 +36,14 @@ class RichClient(var clientId: Long) {
    */
   fun connect(callback: (RichClient.() -> Unit)? = null): RichClient {
     if (connectionState != ConnectionState.DISCONNECTED) {
+      logger?.warn("Already connected to Discord. Skipping")
       callback?.invoke(this)
       return this
     }
 
     connection.open()
     connectionState = ConnectionState.CONNECTED
+    logger?.info("Successfully connected to Discord")
     handshake()
 
     callback?.invoke(this)
@@ -78,6 +82,7 @@ class RichClient(var clientId: Long) {
       lastUpdated = currentTime
     } else if (updateTimer?.isActive != true) {
       updateTimer = clientScope.launch {
+        logger?.info("Scheduled a presence update in ${UPDATE_INTERVAL - timeSinceLastUpdate}ms")
         delay(UPDATE_INTERVAL - timeSinceLastUpdate)
         sendActivityUpdate()
         lastUpdated = epochMillis()
@@ -101,12 +106,16 @@ class RichClient(var clientId: Long) {
    * @return The current Client instance for chaining.
    */
   fun shutdown(): RichClient {
-    if (connectionState == ConnectionState.DISCONNECTED) return this
+    if (connectionState == ConnectionState.DISCONNECTED) {
+      logger?.warn("Already disconnected from Discord. Skipping")
+      return this
+    }
     // TODO: Send valid payload
     connection.write(2, "{\"v\": 1,\"client_id\":\"$clientId\"}")
     connection.read()
     connection.close()
     connectionState = ConnectionState.DISCONNECTED
+    logger?.info("Successfully disconnected from Discord")
     updateTimer?.cancel()
     updateTimer = null
     lastActivity = null
@@ -117,6 +126,7 @@ class RichClient(var clientId: Long) {
   private fun sendActivityUpdate() {
     if (connectionState != ConnectionState.SENT_HANDSHAKE) return
     val packet = Json.encodeToString(Packet("SET_ACTIVITY", PacketArgs(getProcessId(), lastActivity), "-"))
+    logger?.info("Sending presence update with payload: $packet")
     connection.write(1, packet)
     connection.read()
   }
@@ -127,6 +137,7 @@ class RichClient(var clientId: Long) {
       throw InvalidClientIdException("'$clientId' is not a valid client ID")
     }
     connectionState = ConnectionState.SENT_HANDSHAKE
+    logger?.info("Performed initial handshake")
   }
 
   companion object {
