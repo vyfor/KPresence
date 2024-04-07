@@ -2,7 +2,7 @@
 
 package io.github.vyfor.kpresence
 
-import io.github.vyfor.kpresence.exception.InvalidClientIdException
+import io.github.vyfor.kpresence.exception.*
 import io.github.vyfor.kpresence.ipc.*
 import io.github.vyfor.kpresence.logger.ILogger
 import io.github.vyfor.kpresence.rpc.Activity
@@ -33,6 +33,10 @@ class RichClient(var clientId: Long) {
    * Establishes a connection to Discord.
    * @param callback The callback function to be executed after establishing the connection.
    * @return The current Client instance for chaining.
+   * @throws InvalidClientIdException if the provided client ID is not valid.
+   * @throws ConnectionException if an error occurs while establishing the connection.
+   * @throws PipeReadException if an error occurs while reading from the IPC pipe.
+   * @throws PipeWriteException if an error occurs while writing to the IPC pipe.
    */
   fun connect(callback: (RichClient.() -> Unit)? = null): RichClient {
     if (connectionState != ConnectionState.DISCONNECTED) {
@@ -54,9 +58,15 @@ class RichClient(var clientId: Long) {
   /**
    * Attempts to reconnect if there is an already active connection.
    * @return The current Client instance for chaining.
+   * @throws InvalidClientIdException if the provided client ID is not valid.
+   * @throws ConnectionException if an error occurs while establishing the connection.
+   * @throws PipeReadException if an error occurs while reading from the IPC pipe.
+   * @throws PipeWriteException if an error occurs while writing to the IPC pipe.
    */
   fun reconnect(): RichClient {
-    require(connectionState != ConnectionState.DISCONNECTED) { "Reconnection is not possible while disconnected." }
+    if (connectionState != ConnectionState.SENT_HANDSHAKE) {
+      throw NotConnectedException()
+    }
 
     shutdown()
     connect()
@@ -69,10 +79,18 @@ class RichClient(var clientId: Long) {
    * Skips identical presence updates.
    * @param activity The activity to display.
    * @return The current Client instance for chaining.
+   * @throws NotConnectedException if the client is not connected to Discord.
+   * @throws PipeReadException if an error occurs while reading from the IPC pipe.
+   * @throws PipeWriteException if an error occurs while writing to the IPC pipe.
    */
   fun update(activity: Activity?): RichClient {
-    require(connectionState == ConnectionState.SENT_HANDSHAKE) { "Presence updates are not allowed while disconnected." }
-    if (lastActivity == activity) return this
+    if (connectionState != ConnectionState.SENT_HANDSHAKE) {
+      throw NotConnectedException()
+    }
+    if (lastActivity == activity) {
+      logger?.info("Received identical presence update. Skipping")
+      return this
+    }
     lastActivity = activity
     val currentTime = epochMillis()
     val timeSinceLastUpdate = currentTime - lastUpdated
@@ -80,23 +98,29 @@ class RichClient(var clientId: Long) {
     if (timeSinceLastUpdate >= UPDATE_INTERVAL) {
       sendActivityUpdate()
       lastUpdated = currentTime
+      return this
     } else if (updateTimer?.isActive != true) {
       updateTimer = clientScope.launch {
-        logger?.info("Scheduled a presence update in ${UPDATE_INTERVAL - timeSinceLastUpdate}ms")
         delay(UPDATE_INTERVAL - timeSinceLastUpdate)
         sendActivityUpdate()
         lastUpdated = epochMillis()
       }
     }
+    logger?.info("Scheduled a presence update in ${UPDATE_INTERVAL - timeSinceLastUpdate}ms")
     return this
   }
   
   /**
    * Clears the current activity shown on Discord.
    * @return The current Client instance for chaining.
+   * @throws NotConnectedException if the client is not connected to Discord.
+   * @throws PipeReadException if an error occurs while reading from the IPC pipe.
+   * @throws PipeWriteException if an error occurs while writing to the IPC pipe.
    */
   fun clear(): RichClient {
-    require(connectionState == ConnectionState.SENT_HANDSHAKE) { "Cannot clear presence while disconnected." }
+    if (connectionState != ConnectionState.SENT_HANDSHAKE) {
+      throw NotConnectedException()
+    }
     update(null)
     return this
   }
