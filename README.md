@@ -3,7 +3,7 @@
 **📦 A lightweight, cross-platform [Kotlin Multiplatform](https://kotlinlang.org/docs/multiplatform.html) library for interacting with Discord Rich Presence.**
 
 ## 💎 Features
-- Cross-platform compatibility (Windows, Linux, macOS*)
+- Cross-platform compatibility (Windows, Linux, macOS)
 - Fast and user-friendly, featuring DSL support
 - Provides both JVM and Native implementations
 - Respects the ratelimit of one update per 15 seconds. The library will always send the newest presence update once the client is free to do so
@@ -16,11 +16,13 @@
 
 ```gradle
 dependencies {
-    implementation("io.github.vyfor:kpresence:0.5.0")
+    implementation("io.github.vyfor:kpresence:0.5.1")
 }
 ```
 
 ## ✨ Examples
+
+### Initial connection and presence updates
 ```kt
 val client = RichClient(CLIENT_ID)
   
@@ -61,5 +63,8 @@ val activity = activity {
 client.update(activity)
 ```
 
-## Notes
-> * To use on macOS, clone the repository and build it manually.
+### Enable logging
+```kt
+val client = RichClient(CLIENT_ID)
+client.logger = ILogger.default()
+```
