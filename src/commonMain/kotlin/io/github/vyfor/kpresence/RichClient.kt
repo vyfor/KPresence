@@ -2,6 +2,7 @@
 
 package io.github.vyfor.kpresence
 
+import io.github.vyfor.kpresence.exception.InvalidClientIdException
 import io.github.vyfor.kpresence.ipc.*
 import io.github.vyfor.kpresence.rpc.Activity
 import io.github.vyfor.kpresence.rpc.Packet
@@ -17,7 +18,7 @@ import kotlinx.serialization.json.Json
  * @property clientId The Discord application client ID.
  */
 class RichClient(var clientId: Long) {
-  var state = State.DISCONNECTED
+  var connectionState = ConnectionState.DISCONNECTED
     private set
   
   private val connection = Connection()
@@ -32,13 +33,13 @@ class RichClient(var clientId: Long) {
    * @return The current Client instance for chaining.
    */
   fun connect(callback: (RichClient.() -> Unit)? = null): RichClient {
-    if (state != State.DISCONNECTED) {
+    if (connectionState != ConnectionState.DISCONNECTED) {
       callback?.invoke(this)
       return this
     }
 
     connection.open()
-    state = State.CONNECTED
+    connectionState = ConnectionState.CONNECTED
     handshake()
 
     callback?.invoke(this)
@@ -51,7 +52,7 @@ class RichClient(var clientId: Long) {
    * @return The current Client instance for chaining.
    */
   fun reconnect(): RichClient {
-    require(state != State.DISCONNECTED) { "Reconnection is not possible while disconnected." }
+    require(connectionState != ConnectionState.DISCONNECTED) { "Reconnection is not possible while disconnected." }
 
     shutdown()
     connect()
@@ -66,7 +67,7 @@ class RichClient(var clientId: Long) {
    * @return The current Client instance for chaining.
    */
   fun update(activity: Activity?): RichClient {
-    require(state == State.SENT_HANDSHAKE) { "Presence updates are not allowed while disconnected." }
+    require(connectionState == ConnectionState.SENT_HANDSHAKE) { "Presence updates are not allowed while disconnected." }
     if (lastActivity == activity) return this
     lastActivity = activity
     val currentTime = epochMillis()
@@ -90,7 +91,7 @@ class RichClient(var clientId: Long) {
    * @return The current Client instance for chaining.
    */
   fun clear(): RichClient {
-    require(state == State.SENT_HANDSHAKE) { "Cannot clear presence while disconnected." }
+    require(connectionState == ConnectionState.SENT_HANDSHAKE) { "Cannot clear presence while disconnected." }
     update(null)
     return this
   }
@@ -100,12 +101,12 @@ class RichClient(var clientId: Long) {
    * @return The current Client instance for chaining.
    */
   fun shutdown(): RichClient {
-    if (state == State.DISCONNECTED) return this
+    if (connectionState == ConnectionState.DISCONNECTED) return this
     // TODO: Send valid payload
     connection.write(2, "{\"v\": 1,\"client_id\":\"$clientId\"}")
     connection.read()
     connection.close()
-    state = State.DISCONNECTED
+    connectionState = ConnectionState.DISCONNECTED
     updateTimer?.cancel()
     updateTimer = null
     lastActivity = null
@@ -114,7 +115,7 @@ class RichClient(var clientId: Long) {
   }
   
   private fun sendActivityUpdate() {
-    if (state != State.SENT_HANDSHAKE) return
+    if (connectionState != ConnectionState.SENT_HANDSHAKE) return
     val packet = Json.encodeToString(Packet("SET_ACTIVITY", PacketArgs(getProcessId(), lastActivity), "-"))
     connection.write(1, packet)
     connection.read()
@@ -123,9 +124,9 @@ class RichClient(var clientId: Long) {
   private fun handshake() {
     connection.write(0, "{\"v\": 1,\"client_id\":\"$clientId\"}")
     if (connection.read().decodeToString().contains("Invalid client ID")) {
-      throw RuntimeException("Provided invalid client ID: $clientId")
+      throw InvalidClientIdException("'$clientId' is not a valid client ID")
     }
-    state = State.SENT_HANDSHAKE
+    connectionState = ConnectionState.SENT_HANDSHAKE
   }
 
   companion object {
@@ -133,7 +134,7 @@ class RichClient(var clientId: Long) {
   }
 }
 
-enum class State {
+enum class ConnectionState {
   DISCONNECTED,
   CONNECTED,
   SENT_HANDSHAKE,

@@ -1,15 +1,19 @@
 package io.github.vyfor.kpresence.ipc
 
+import io.github.vyfor.kpresence.exception.*
 import io.github.vyfor.kpresence.utils.putInt
 import io.github.vyfor.kpresence.utils.reverseBytes
 import java.io.EOFException
+import java.io.FileNotFoundException
 import java.io.InputStream
 import java.io.OutputStream
 import java.io.RandomAccessFile
+import java.lang.IllegalArgumentException
 import java.lang.System.getenv
 import java.net.UnixDomainSocketAddress
 import java.nio.channels.Channels
 import java.nio.channels.SocketChannel
+import java.nio.file.InvalidPathException
 
 actual class Connection {
   private val con =
@@ -49,34 +53,45 @@ actual class Connection {
         try {
           pipe = RandomAccessFile("\\\\.\\pipe\\discord-ipc-$i", "rw")
           return
-        } catch (_: Exception) {}
+        } catch (_: FileNotFoundException) {
+        } catch (e: Exception) {
+          throw ConnectionException(e)
+        }
       }
       
-      throw RuntimeException("Could not connect to the pipe!")
+      throw PipeNotFoundException()
     }
     
     override fun read(): ByteArray {
       pipe?.let { stream ->
-        stream.readInt()
-        val length = stream.readInt().reverseBytes()
-        val buffer = ByteArray(length)
-        
-        stream.read(buffer, 0, length)
-        return buffer
-      } ?: throw IllegalStateException("Not connected")
+        try {
+          stream.readInt()
+          val length = stream.readInt().reverseBytes()
+          val buffer = ByteArray(length)
+          
+          stream.read(buffer, 0, length)
+          return buffer
+        } catch (e: Exception) {
+          throw PipeReadException(e.message.orEmpty())
+        }
+      } ?: throw NotConnectedException()
     }
     
     override fun write(opcode: Int, data: String) {
       pipe?.let { stream ->
-        val bytes = data.encodeToByteArray()
-        val buffer = ByteArray(bytes.size + 8)
-        
-        buffer.putInt(opcode.reverseBytes())
-        buffer.putInt(bytes.size.reverseBytes(), 4)
-        bytes.copyInto(buffer, 8)
-        
-        stream.write(buffer)
-      } ?: throw IllegalStateException("Not connected")
+        try {
+          val bytes = data.encodeToByteArray()
+          val buffer = ByteArray(bytes.size + 8)
+          
+          buffer.putInt(opcode.reverseBytes())
+          buffer.putInt(bytes.size.reverseBytes(), 4)
+          bytes.copyInto(buffer, 8)
+          
+          stream.write(buffer)
+        } catch (e: Exception) {
+          throw PipeWriteException(e.message.orEmpty())
+        }
+      } ?: throw NotConnectedException()
     }
     
     override fun close() {
@@ -103,40 +118,53 @@ actual class Connection {
           inputStream = Channels.newInputStream(pipe!!)
           outputStream = Channels.newOutputStream(pipe!!)
           return
-        } catch (_: Exception) {}
+        } catch (_: InvalidPathException) {
+        } catch (_: IllegalArgumentException) {
+        } catch (e: Exception) {
+          throw ConnectionException(e)
+        }
       }
       
-      throw RuntimeException("Could not connect to the pipe!")
+      throw PipeNotFoundException()
     }
     
     override fun read(): ByteArray {
       inputStream?.let { stream ->
-        stream.readInt()
-        val length = stream.readInt()
-        val buffer = ByteArray(length)
-        
-        stream.read(buffer, 0, length)
-        return buffer
-      } ?: throw IllegalStateException("Not connected")
+        try {
+          stream.readInt()
+          val length = stream.readInt()
+          val buffer = ByteArray(length)
+          
+          stream.read(buffer, 0, length)
+          return buffer
+        } catch (e: Exception) {
+          throw PipeReadException(e.message.orEmpty())
+        }
+      } ?: throw NotConnectedException()
     }
     
     override fun write(opcode: Int, data: String) {
       outputStream?.let { stream ->
-        val bytes = data.encodeToByteArray()
-        val buffer = ByteArray(bytes.size + 8)
-        
-        buffer.putInt(opcode.reverseBytes())
-        buffer.putInt(bytes.size.reverseBytes(), 4)
-        bytes.copyInto(buffer, 8)
-        
-        stream.write(buffer)
-      } ?: throw IllegalStateException("Not connected")
+        try {
+          val bytes = data.encodeToByteArray()
+          val buffer = ByteArray(bytes.size + 8)
+          
+          buffer.putInt(opcode.reverseBytes())
+          buffer.putInt(bytes.size.reverseBytes(), 4)
+          bytes.copyInto(buffer, 8)
+          
+          stream.write(buffer)
+        } catch (e: Exception) {
+          throw PipeWriteException(e.message.orEmpty())
+        }
+      } ?: throw NotConnectedException()
     }
     
     override fun close() {
       pipe?.close()
       inputStream?.close()
       outputStream?.close()
+      pipe = null
     }
     
     private fun InputStream.readInt(): Int {
