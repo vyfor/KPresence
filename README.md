@@ -4,9 +4,9 @@
 
 ## 💎 Features
 - Cross-platform compatibility (Windows, Linux, macOS)
-- Fast and user-friendly, featuring DSL support
+- Fast and user-friendly
+- Offers DSL support
 - Provides both JVM and Native implementations
-- Respects the ratelimit of one update per 15 seconds. The library will always send the newest presence update once the client is free to do so
 - Validates the activity fields before sending them
 
 ## 🔌 Requirements
