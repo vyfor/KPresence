@@ -10,7 +10,6 @@ import io.github.vyfor.kpresence.rpc.Packet
 import io.github.vyfor.kpresence.rpc.PacketArgs
 import io.github.vyfor.kpresence.utils.epochMillis
 import io.github.vyfor.kpresence.utils.getProcessId
-import kotlinx.coroutines.*
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -23,10 +22,7 @@ class RichClient(var clientId: Long) {
     private set
   
   private val connection = Connection()
-  private val clientScope = CoroutineScope(Dispatchers.IO)
   private var lastActivity: Activity? = null
-  private var lastUpdated = 0L
-  private var updateTimer: Job? = null
   var logger: ILogger? = null
 
   /**
@@ -87,26 +83,15 @@ class RichClient(var clientId: Long) {
     if (connectionState != ConnectionState.SENT_HANDSHAKE) {
       throw NotConnectedException()
     }
+
     if (lastActivity == activity) {
       logger?.info("Received identical presence update. Skipping")
       return this
     }
-    lastActivity = activity
-    val currentTime = epochMillis()
-    val timeSinceLastUpdate = currentTime - lastUpdated
 
-    if (timeSinceLastUpdate >= UPDATE_INTERVAL) {
-      sendActivityUpdate()
-      lastUpdated = currentTime
-      return this
-    } else if (updateTimer?.isActive != true) {
-      updateTimer = clientScope.launch {
-        delay(UPDATE_INTERVAL - timeSinceLastUpdate)
-        sendActivityUpdate()
-        lastUpdated = epochMillis()
-      }
-    }
-    logger?.info("Scheduled a presence update in ${UPDATE_INTERVAL - timeSinceLastUpdate}ms")
+    lastActivity = activity
+    sendActivityUpdate()
+
     return this
   }
   
@@ -140,10 +125,7 @@ class RichClient(var clientId: Long) {
     connection.close()
     connectionState = ConnectionState.DISCONNECTED
     logger?.info("Successfully disconnected from Discord")
-    updateTimer?.cancel()
-    updateTimer = null
     lastActivity = null
-    lastUpdated = 0
     return this
   }
   
@@ -162,10 +144,6 @@ class RichClient(var clientId: Long) {
     }
     connectionState = ConnectionState.SENT_HANDSHAKE
     logger?.info("Performed initial handshake")
-  }
-
-  companion object {
-    private const val UPDATE_INTERVAL = 15000L
   }
 }
 
