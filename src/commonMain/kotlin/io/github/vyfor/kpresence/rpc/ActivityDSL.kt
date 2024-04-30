@@ -2,6 +2,8 @@
 
 package io.github.vyfor.kpresence.rpc
 
+import io.github.vyfor.kpresence.utils.epochMillis
+
 @DslMarker
 annotation class ActivityDSL
 
@@ -123,7 +125,12 @@ class ActivityTimestampsBuilder {
    * Unix time (in milliseconds) of when the activity ends.
    */
   var end: Long? = null
-
+  
+  /**
+   * Returns the current time in milliseconds since the Unix epoch.
+   */
+  fun now(): Long = epochMillis()
+  
   /**
    * Builds the configured ActivityTimestamps instance.
    * @return The constructed ActivityTimestamps instance.
