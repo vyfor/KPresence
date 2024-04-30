@@ -16,7 +16,7 @@
 
 ```gradle
 dependencies {
-    implementation("io.github.vyfor:kpresence:0.5.2")
+    implementation("io.github.vyfor:kpresence:0.5.3")
 }
 ```
 
@@ -34,8 +34,8 @@ val activity = activity {
     state = "Writing code"
     
     timestamps {
-        start = epochMillis() - 3600_000
-        end = epochMillis() + 3600_000
+        start = now() - 3600_000
+        end = now() + 3600_000
     }
     
     party {
