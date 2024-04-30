@@ -139,7 +139,7 @@ class RichClient(var clientId: Long) {
   
   private fun handshake() {
     connection.write(0, "{\"v\": 1,\"client_id\":\"$clientId\"}")
-    if (connection.read().decodeToString().contains("Invalid client ID")) {
+    if (connection.read().decodeToString().contains("Invalid Client ID")) {
       throw InvalidClientIdException("'$clientId' is not a valid client ID")
     }
     connectionState = ConnectionState.SENT_HANDSHAKE
