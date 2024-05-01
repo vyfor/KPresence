@@ -1,5 +1,6 @@
 package io.github.vyfor.kpresence
 
+import io.github.vyfor.kpresence.event.ReadyEvent
 import io.github.vyfor.kpresence.logger.ILogger
 import io.github.vyfor.kpresence.rpc.*
 import io.github.vyfor.kpresence.utils.epochMillis
@@ -11,10 +12,9 @@ class ClientTest {
     val client = RichClient(1216296290451984424)
     client.logger = ILogger.default()
     
-    client.connect {
-      println("Connected")
-      println("Awaiting input (<text>, clear, shutdown):")
-    }
+    client.on<ReadyEvent> {
+      client.logger?.info("Awaiting input (<text>, clear, shutdown):")
+    }.connect()
     
     while (true) {
       val input = readln()
@@ -35,6 +35,10 @@ class ClientTest {
           state = "KPresence"
         }
       )
+    }
+    
+    if (client.connectionState != ConnectionState.DISCONNECTED) {
+      client.shutdown()
     }
   }
   

@@ -12,7 +12,7 @@ actual class Connection {
   
   actual fun open() {
     for (i in 0..9) {
-      val pipeHandle = CreateFileW("\\\\.\\pipe\\discord-ipc-$i", GENERIC_READ or GENERIC_WRITE.convert(), 0u, null, OPEN_EXISTING.convert(), 0u, null)
+      val pipeHandle = CreateFileW("\\\\.\\pipe\\discord-ipc-$i", GENERIC_READ or GENERIC_WRITE.convert(), 0u, null, OPEN_EXISTING.convert(), FILE_FLAG_OVERLAPPED.convert(), null)
       
       if (pipeHandle == INVALID_HANDLE_VALUE) {
         val err = GetLastError()
@@ -28,25 +28,31 @@ actual class Connection {
     throw PipeNotFoundException()
   }
   
-  actual fun read(): ByteArray = memScoped {
+  actual fun read(): Message? = memScoped {
     pipe?.let { _ ->
-      readBytes(4)
-      val length = readBytes(4).first.byteArrayToInt().reverseBytes()
-      val buffer = ByteArray(length)
-      val bytesRead = readBytes(4).second
+      val opcode = readBytes(4)?.first?.byteArrayToInt()?.reverseBytes() ?: return@memScoped null
+      val length = readBytes(4)?.first?.byteArrayToInt()?.reverseBytes() ?: return@memScoped null
+      val (buffer) = readBytes(length) ?: return@memScoped null
       
-      return buffer.copyOf(bytesRead)
+      return Message(
+        opcode,
+        buffer
+      )
     } ?: throw NotConnectedException()
   }
   
-  actual fun write(opcode: Int, data: String) {
+  actual fun write(opcode: Int, data: String?) {
     pipe?.let { handle ->
-      val bytes = data.encodeToByteArray()
-      val buffer = ByteArray(bytes.size + 8)
+      val bytes = data?.encodeToByteArray()
+      val buffer = ByteArray((bytes?.size ?: 0) + 8)
       
       buffer.putInt(opcode.reverseBytes())
-      buffer.putInt(bytes.size.reverseBytes(), 4)
-      bytes.copyInto(buffer, 8)
+      if (bytes != null) {
+        buffer.putInt(bytes.size.reverseBytes(), 4)
+        bytes.copyInto(buffer, 8)
+      } else {
+        buffer.putInt(0, 4)
+      }
       
       val success = buffer.usePinned {
         WriteFile(handle, it.addressOf(0), buffer.size.convert(), null, null)
@@ -62,28 +68,51 @@ actual class Connection {
     pipe = null
   }
   
-  private fun readBytes(size: Int): Pair<ByteArray, Int> = memScoped {
+  private fun readBytes(size: Int): Pair<ByteArray, Int>? = memScoped {
+    val bytesAvailable = alloc<UIntVar>()
+    val result = PeekNamedPipe(
+      pipe,
+      null,
+      0u,
+      null,
+      bytesAvailable.ptr,
+      null
+    )
+    
+    if (result == FALSE) {
+      throw PipeReadException(formatError(GetLastError()))
+    }
+    if (bytesAvailable.value == 0u) {
+      return null
+    }
+    
     val bytes = ByteArray(size)
     val bytesRead = alloc<UIntVar>()
-    ReadFile(pipe, bytes.pin().addressOf(0), size.convert(), bytesRead.ptr, null).let { success ->
-      if (success == FALSE) {
-        throw PipeReadException(formatError(GetLastError()))
+    bytes.usePinned { pinnedBytes ->
+      ReadFile(pipe, pinnedBytes.addressOf (0), size.convert(), bytesRead.ptr, null).let { success ->
+        if (success == FALSE) {
+          throw PipeReadException(formatError(GetLastError()))
+        }
       }
     }
+    
+    if (bytesRead.value == 0u) return null
     return bytes to bytesRead.value.toInt()
   }
   
   private fun formatError(err: DWORD) = memScoped {
     val errMessage = ByteArray(1024)
-    val result = FormatMessageA(
-      FORMAT_MESSAGE_FROM_SYSTEM.toUInt() or FORMAT_MESSAGE_IGNORE_INSERTS.toUInt(),
-      null,
-      err,
-      0u,
-      errMessage.pin().addressOf(0),
-      errMessage.size.convert(),
-      null
-    )
+    val result = errMessage.usePinned { pinnedErrMessage ->
+      FormatMessageA(
+        FORMAT_MESSAGE_FROM_SYSTEM.toUInt() or FORMAT_MESSAGE_IGNORE_INSERTS.toUInt(),
+        null,
+        err,
+        0u,
+        pinnedErrMessage.addressOf(0),
+        errMessage.size.convert(),
+        null
+      )
+    }
     if (result != 0u) errMessage.decodeToString()
     else "Error code: $err"
   }

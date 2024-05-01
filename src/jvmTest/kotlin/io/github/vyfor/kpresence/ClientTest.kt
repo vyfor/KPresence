@@ -1,5 +1,6 @@
 package io.github.vyfor.kpresence
 
+import io.github.vyfor.kpresence.event.ReadyEvent
 import io.github.vyfor.kpresence.logger.ILogger
 import io.github.vyfor.kpresence.rpc.*
 import kotlin.random.Random
@@ -11,12 +12,9 @@ class JVMClientTest {
     val client = RichClient(1216296290451984424)
     client.logger = ILogger.default()
     
-    client.connect {
-      println("Connected")
-    }
+    client.connect()
     
     repeat(2) {
-      println("Updating")
       client.update(
         activity {
           details = Random.nextInt().toString()
@@ -25,5 +23,7 @@ class JVMClientTest {
       )
       Thread.sleep(15000)
     }
+    
+    client.shutdown()
   }
 }
