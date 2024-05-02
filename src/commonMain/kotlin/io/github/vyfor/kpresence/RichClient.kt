@@ -14,7 +14,7 @@ import io.github.vyfor.kpresence.rpc.Packet
 import io.github.vyfor.kpresence.rpc.PacketArgs
 import io.github.vyfor.kpresence.utils.getProcessId
 import kotlinx.coroutines.*
-import kotlinx.serialization.Serializable
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -27,7 +27,7 @@ class RichClient(
   val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.IO)
 ) {
   private val connection = Connection()
-  private val signal = Job()
+  private var signal = Mutex(true)
   private var lastActivity: Activity? = null
   
   var connectionState = ConnectionState.DISCONNECTED
@@ -39,14 +39,15 @@ class RichClient(
   
   /**
    * Establishes a connection to Discord.
+   * @param shouldBlock Whether to block the current thread until the connection is established.
    * @return The current [RichClient] instance for chaining.
    * @throws InvalidClientIdException if the provided client ID is not valid.
    * @throws ConnectionException if an error occurs while establishing the connection.
    * @throws PipeReadException if an error occurs while reading from the IPC pipe.
    * @throws PipeWriteException if an error occurs while writing to the IPC pipe.
    */
-  fun connect(): RichClient {
-    if (connectionState == ConnectionState.SENT_HANDSHAKE) {
+  fun connect(shouldBlock: Boolean = true): RichClient {
+    if (connectionState != ConnectionState.DISCONNECTED) {
       logger?.warn("Already connected to Discord. Skipping")
       return this
     }
@@ -55,31 +56,32 @@ class RichClient(
     connectionState = ConnectionState.CONNECTED
     logger?.info("Connected to Discord")
     handshake()
-    runBlocking {
-      listen()
-      println(signal.isCompleted)
-      signal.join()
+    listen()
+    if (shouldBlock) {
+      runBlocking {
+        signal.lock()
+      }
     }
-    onReady?.invoke(this) ?: logger?.debug("Performed initial handshake")
     
     return this
   }
   
   /**
    * Attempts to reconnect if there is an already active connection.
+   * @param shouldBlock Whether to block the current thread until the connection is established.
    * @return The current [RichClient] instance for chaining.
    * @throws InvalidClientIdException if the provided client ID is not valid.
    * @throws ConnectionException if an error occurs while establishing the connection.
    * @throws PipeReadException if an error occurs while reading from the IPC pipe.
    * @throws PipeWriteException if an error occurs while writing to the IPC pipe.
    */
-  fun reconnect(): RichClient {
+  fun reconnect(shouldBlock: Boolean = true): RichClient {
     if (connectionState != ConnectionState.SENT_HANDSHAKE) {
       throw NotConnectedException()
     }
     
     shutdown()
-    connect()
+    connect(shouldBlock)
     
     return this
   }
@@ -138,6 +140,11 @@ class RichClient(
     }
     
     connection.write(2, null)
+    connectionState = ConnectionState.DISCONNECTED
+    connection.close()
+    lastActivity = null
+    logger?.info("Disconnected from Discord")
+    onDisconnect?.invoke(this@RichClient)
     
     return this
   }
@@ -161,44 +168,52 @@ class RichClient(
   private fun sendActivityUpdate() {
     if (connectionState != ConnectionState.SENT_HANDSHAKE) return
     val packet = Json.encodeToString(Packet("SET_ACTIVITY", PacketArgs(getProcessId(), lastActivity), "-"))
-    logger?.debug("Sending presence update with payload:")
-    logger?.debug(packet)
+    logger?.apply {
+      debug("Sending presence update with payload:")
+      debug(packet)
+    }
+    
     connection.write(1, packet)
   }
   
   private fun handshake() {
     connection.write(0, "{\"v\": 1,\"client_id\":\"$clientId\"}")
-
-    // TODO: move to listen()
-    connection.read()?.let { response ->
-      logger?.trace("Received response:")
-      logger?.trace("Message(opcode: ${response.opcode}, data: ${response.data.decodeToString()})")
-      if (response.data.decodeToString().contains("Invalid Client ID")) {
-        throw InvalidClientIdException("'$clientId' is not a valid client ID")
-      }
-      
-      connectionState = ConnectionState.SENT_HANDSHAKE
-    }
   }
   
   private fun listen(): Job {
     return coroutineScope.launch {
-      logger?.trace("Listening for responses...")
-      signal.complete()
-      while (isActive) {
+      while (isActive && connectionState != ConnectionState.DISCONNECTED) {
         val response = connection.read() ?: continue
-        logger?.trace("Received response:")
-        logger?.trace("Message(opcode: ${response.opcode}, data: ${response.data.decodeToString()})")
+        logger?.apply {
+          trace("Received response:")
+          trace("Message(opcode: ${response.opcode}, data: ${response.data.decodeToString()})")
+        }
         when (response.opcode) {
           1 -> {
-            onActivityUpdate?.invoke(this@RichClient) ?: logger?.debug("Successfully updated presence")
+            if (connectionState == ConnectionState.CONNECTED) {
+              if (response.data.decodeToString().contains("Invalid Client ID")) {
+                throw InvalidClientIdException("'$clientId' is not a valid client ID")
+              }
+              
+              connectionState = ConnectionState.SENT_HANDSHAKE
+              if (signal.isLocked) signal.unlock()
+              logger?.debug("Performed initial handshake")
+              onReady?.invoke(this@RichClient)
+              continue
+            }
+            
+            logger?.debug("Successfully updated presence")
+            onActivityUpdate?.invoke(this@RichClient)
           }
           2 -> {
-            coroutineScope.cancel()
-            connection.close()
-            connectionState = ConnectionState.DISCONNECTED
-            lastActivity = null
-            onDisconnect?.invoke(this@RichClient) ?: logger?.info("The connection was forcibly closed")
+            if (connectionState != ConnectionState.DISCONNECTED) {
+              connectionState = ConnectionState.DISCONNECTED
+              connection.close()
+              lastActivity = null
+              logger?.warn("The connection was forcibly closed")
+              onDisconnect?.invoke(this@RichClient)
+              break
+            }
           }
         }
       }
@@ -211,10 +226,3 @@ enum class ConnectionState {
   CONNECTED,
   SENT_HANDSHAKE,
 }
-
-// TODO: Add proper error handling
-@Serializable
-data class ConnectionError(
-  val message: String,
-  val code: Int
-)
