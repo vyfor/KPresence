@@ -88,28 +88,30 @@ class RichClient(
    * Updates the current activity shown on Discord.
    * Skips identical presence updates.
    * @param activity The activity to display.
-   * @param activityBlock A lambda to construct an [Activity] if no direct object is provided.
    * @return The current [RichClient] instance for chaining.
    * @throws NotConnectedException if the client is not connected to Discord.
    * @throws PipeReadException if an error occurs while reading from the IPC pipe.
    * @throws PipeWriteException if an error occurs while writing to the IPC pipe.
    * @throws IllegalArgumentException if the validation of the [activity]'s fields fails.
    */
-  fun update(activity: Activity? = null, activityBlock: (ActivityBuilder.() -> Unit)? = null): RichClient {
-    if (connectionState != ConnectionState.SENT_HANDSHAKE) {
-      throw NotConnectedException()
-    }
+  fun update(activity: Activity?): RichClient {
+    sendActivityUpdate(activity)
     
-    val currentActivity = activity ?: activityBlock?.let {
-      ActivityBuilder().apply(it).build()
-    }
-    if (lastActivity == currentActivity) {
-      logger?.debug("Received identical presence update. Skipping")
-      return this
-    }
-    
-    lastActivity = currentActivity
-    sendActivityUpdate()
+    return this
+  }
+  
+  /**
+   * Updates the current activity shown on Discord.
+   * Skips identical presence updates.
+   * @param activityBlock A lambda to construct an [Activity].
+   * @return The current [RichClient] instance for chaining.
+   * @throws NotConnectedException if the client is not connected to Discord.
+   * @throws PipeReadException if an error occurs while reading from the IPC pipe.
+   * @throws PipeWriteException if an error occurs while writing to the IPC pipe.
+   * @throws IllegalArgumentException if the validation of the [activity]'s fields fails.
+   */
+  fun update(activityBlock: ActivityBuilder.() -> Unit): RichClient {
+    sendActivityUpdate(ActivityBuilder().apply(activityBlock).build())
     
     return this
   }
@@ -167,8 +169,17 @@ class RichClient(
     return this
   }
   
-  private fun sendActivityUpdate() {
-    if (connectionState != ConnectionState.SENT_HANDSHAKE) return
+  private fun sendActivityUpdate(currentActivity: Activity?) {
+    if (connectionState != ConnectionState.SENT_HANDSHAKE) {
+      throw NotConnectedException()
+    }
+    
+    if (lastActivity == currentActivity) {
+      logger?.debug("Received identical presence update. Skipping")
+      return
+    }
+    lastActivity = currentActivity
+    
     val packet = Json.encodeToString(Packet("SET_ACTIVITY", PacketArgs(getProcessId(), lastActivity), "-"))
     logger?.apply {
       debug("Sending presence update with payload:")
