@@ -3,7 +3,6 @@ package io.github.vyfor.kpresence
 import io.github.vyfor.kpresence.event.ReadyEvent
 import io.github.vyfor.kpresence.logger.ILogger
 import io.github.vyfor.kpresence.logger.LogLevel
-import io.github.vyfor.kpresence.rpc.*
 import kotlin.test.Test
 
 class ClientTest {
@@ -39,12 +38,10 @@ class ClientTest {
         continue
       }
       
-      client.update(
-        activity {
-          details = input
-          state = "KPresence"
-        }
-      )
+      client.update {
+        details = input
+        state = "KPresence"
+      }
     }
     
     if (client.connectionState != ConnectionState.DISCONNECTED) {

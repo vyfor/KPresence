@@ -2,7 +2,6 @@ package io.github.vyfor.kpresence
 
 import io.github.vyfor.kpresence.logger.ILogger
 import io.github.vyfor.kpresence.logger.LogLevel
-import io.github.vyfor.kpresence.rpc.*
 import kotlin.random.Random
 import kotlin.test.Test
 
@@ -15,12 +14,10 @@ class JVMClientTest {
     client.connect(true)
     
     repeat(2) {
-      client.update(
-        activity {
-          details = Random.nextInt().toString()
-          state = "KPresence"
-        }
-      )
+      client.update {
+        details = Random.nextInt().toString()
+        state = "KPresence"
+      }
       Thread.sleep(15000)
     }
     
