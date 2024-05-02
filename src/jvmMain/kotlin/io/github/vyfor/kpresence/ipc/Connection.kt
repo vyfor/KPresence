@@ -7,7 +7,7 @@ import java.lang.System.getenv
 import java.net.UnixDomainSocketAddress
 import java.nio.ByteBuffer
 import java.nio.channels.AsynchronousFileChannel
-import java.nio.channels.AsynchronousSocketChannel
+import java.nio.channels.SocketChannel
 import java.nio.file.InvalidPathException
 import java.nio.file.StandardOpenOption
 import kotlin.io.path.Path
@@ -115,7 +115,7 @@ actual class Connection {
   }
   
   internal class UnixConnection: IConnection {
-    private var pipe: AsynchronousSocketChannel? = null
+    private var pipe: SocketChannel? = null
     
     override fun open() {
       val dir =
@@ -127,8 +127,9 @@ actual class Connection {
       
       for (i in 0..9) {
         try {
-          pipe = AsynchronousSocketChannel.open().apply {
-            connect(UnixDomainSocketAddress.of("$dir/discord-ipc-$i")).get()
+          pipe = SocketChannel.open().apply {
+            configureBlocking(false)
+            connect(UnixDomainSocketAddress.of("$dir/discord-ipc-$i"))
           }
           return
         } catch (_: InvalidPathException) {
@@ -148,7 +149,7 @@ actual class Connection {
           val length = stream.readInt().reverseBytes()
           val buffer = ByteBuffer.allocate(length)
           
-          stream.read(buffer).get()
+          stream.read(buffer)
           return Message(
             opcode,
             buffer.array()
@@ -171,7 +172,7 @@ actual class Connection {
             bytes.copyInto(buffer, 8)
           }
           
-          stream.write(ByteBuffer.wrap(buffer)).get()
+          stream.write(ByteBuffer.wrap(buffer))
         } catch (e: Exception) {
           throw PipeWriteException(e.message.orEmpty())
         }
@@ -183,10 +184,10 @@ actual class Connection {
       pipe = null
     }
     
-    private fun AsynchronousSocketChannel.readInt(): Int {
+    private fun SocketChannel.readInt(): Int {
       val buffer = ByteBuffer.allocate(4)
       
-      read(buffer).get()
+      read(buffer)
       return ((buffer[0].toUInt() shl 24) +
         (buffer[1].toUInt() shl 16) +
         (buffer[2].toUInt() shl 8) +
