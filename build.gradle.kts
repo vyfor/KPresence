@@ -13,7 +13,7 @@ plugins {
 }
 
 group = "io.github.vyfor"
-version = "0.5.3"
+version = "0.6.0"
 
 repositories {
     mavenCentral()
@@ -44,6 +44,7 @@ kotlin {
             dependencies {
                 implementation(kotlin("stdlib"))
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
             }
         }
         val commonTest by getting {
@@ -123,6 +124,12 @@ kotlin {
                 kotlinOptions {
                     kotlinOptions.freeCompilerArgs += "-Xexpect-actual-classes"
                 }
+            }
+        }
+        
+        tasks.withType<Test> {
+            testLogging {
+                showStandardStreams = true
             }
         }
     }

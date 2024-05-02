@@ -7,6 +7,7 @@ internal fun ByteArray.putInt(value: Int, offset: Int = 0) {
   this[offset + 3] = value.toByte()
 }
 
+
 internal fun Int.reverseBytes(): Int {
   return (this and -0x1000000 ushr 24) or
     (this and 0x00ff0000 ushr 8) or
@@ -17,10 +18,10 @@ internal fun Int.reverseBytes(): Int {
 internal fun ByteArray.byteArrayToInt(): Int {
   require(size == 4) { "ByteArray size must be 4" }
   
-  return (get(0).toInt() and 0xFF shl 24) or
-    (get(1).toInt() and 0xFF shl 16) or
-    (get(2).toInt() and 0xFF shl 8) or
-    (get(3).toInt() and 0xFF)
+  return (this[0].toInt() shl 24) +
+         (this[1].toInt() shl 16) +
+         (this[2].toInt() shl 8) +
+         (this[3].toInt() shl 0)
 }
 
 fun formatTime(epochMillis: Long): String {

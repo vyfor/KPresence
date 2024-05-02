@@ -28,7 +28,7 @@ val client = RichClient(CLIENT_ID)
   
 client.connect()
 
-val activity = activity {
+client.update {
     type = ActivityType.GAME
     details = "Exploring Kotlin Native"
     state = "Writing code"
@@ -59,11 +59,28 @@ val activity = activity {
     button("Learn more", "https://kotlinlang.org/")
     button("Try it yourself", "https://play.kotlinlang.org/")
 }
-
-client.update(activity)
 ```
 
-### Enable logging
+### Event handling
+```kt
+val client = RichClient(CLIENT_ID)
+
+client.on<ReadyEvent> {
+  update(activity)
+}
+
+client.on<ActivityUpdateEvent> {
+  logger?.info("Updated rich presence")
+}
+
+client.on<DisconnectEvent> {
+  connect(shouldBlock = true) // Attempt to reconnect
+}
+
+client.connect(shouldBlock = false)
+```
+
+### Logging
 ```kt
 val client = RichClient(CLIENT_ID)
 client.logger = ILogger.default()

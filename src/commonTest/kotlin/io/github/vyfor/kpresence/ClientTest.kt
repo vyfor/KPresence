@@ -1,20 +1,19 @@
 package io.github.vyfor.kpresence
 
+import io.github.vyfor.kpresence.event.ReadyEvent
 import io.github.vyfor.kpresence.logger.ILogger
-import io.github.vyfor.kpresence.rpc.*
-import io.github.vyfor.kpresence.utils.epochMillis
+import io.github.vyfor.kpresence.logger.LogLevel
 import kotlin.test.Test
 
 class ClientTest {
   @Test
   fun testClient() {
     val client = RichClient(1216296290451984424)
-    client.logger = ILogger.default()
+    client.logger = ILogger.default(LogLevel.TRACE)
     
-    client.connect {
-      println("Connected")
-      println("Awaiting input (<text>, clear, shutdown):")
-    }
+    client.on<ReadyEvent> {
+      client.logger?.info("Awaiting input (<text>, clear, reconnect, reconnectAsync, shutdown):")
+    }.connect(true)
     
     while (true) {
       val input = readln()
@@ -24,22 +23,29 @@ class ClientTest {
         break
       }
       
+      if (input == "reconnect") {
+        client.reconnect(true)
+        continue
+      }
+      
+      if (input == "reconnectAsync") {
+        client.reconnect(false)
+        continue
+      }
+      
       if (input == "clear") {
         client.clear()
         continue
       }
       
-      client.update(
-        activity {
-          details = input
-          state = "KPresence"
-        }
-      )
+      client.update {
+        details = input
+        state = "KPresence"
+      }
     }
-  }
-  
-  @Test
-  fun testEpochMillis() {
-    println(epochMillis())
+    
+    if (client.connectionState != ConnectionState.DISCONNECTED) {
+      client.shutdown()
+    }
   }
 }
