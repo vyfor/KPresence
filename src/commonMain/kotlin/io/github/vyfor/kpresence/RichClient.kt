@@ -9,9 +9,7 @@ import io.github.vyfor.kpresence.event.ReadyEvent
 import io.github.vyfor.kpresence.exception.*
 import io.github.vyfor.kpresence.ipc.*
 import io.github.vyfor.kpresence.logger.ILogger
-import io.github.vyfor.kpresence.rpc.Activity
-import io.github.vyfor.kpresence.rpc.Packet
-import io.github.vyfor.kpresence.rpc.PacketArgs
+import io.github.vyfor.kpresence.rpc.*
 import io.github.vyfor.kpresence.utils.getProcessId
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
@@ -90,23 +88,27 @@ class RichClient(
    * Updates the current activity shown on Discord.
    * Skips identical presence updates.
    * @param activity The activity to display.
+   * @param activityBlock A lambda to construct an [Activity] if no direct object is provided.
    * @return The current [RichClient] instance for chaining.
    * @throws NotConnectedException if the client is not connected to Discord.
    * @throws PipeReadException if an error occurs while reading from the IPC pipe.
    * @throws PipeWriteException if an error occurs while writing to the IPC pipe.
    * @throws IllegalArgumentException if the validation of the [activity]'s fields fails.
    */
-  fun update(activity: Activity?): RichClient {
+  fun update(activity: Activity? = null, activityBlock: (ActivityBuilder.() -> Unit)? = null): RichClient {
     if (connectionState != ConnectionState.SENT_HANDSHAKE) {
       throw NotConnectedException()
     }
     
-    if (lastActivity == activity) {
+    val currentActivity = activity ?: activityBlock?.let {
+      ActivityBuilder().apply(it).build()
+    }
+    if (lastActivity == currentActivity) {
       logger?.debug("Received identical presence update. Skipping")
       return this
     }
     
-    lastActivity = activity
+    lastActivity = currentActivity
     sendActivityUpdate()
     
     return this
