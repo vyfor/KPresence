@@ -127,10 +127,7 @@ actual class Connection {
       
       for (i in 0..9) {
         try {
-          pipe = SocketChannel.open().apply {
-            configureBlocking(false)
-            connect(UnixDomainSocketAddress.of("$dir/discord-ipc-$i"))
-          }
+          pipe = SocketChannel.open(UnixDomainSocketAddress.of("$dir/discord-ipc-$i"))
           return
         } catch (_: InvalidPathException) {
         } catch (_: IllegalArgumentException) {
