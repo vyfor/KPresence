@@ -17,7 +17,7 @@ interface ILogger {
     /**
      * Returns a default implementation of the ILogger interface.
      */
-    fun default(): ILogger = object : ILogger {
+    fun default(level: LogLevel = LogLevel.INFO): ILogger = object : ILogger {
       override fun error(message: String, throwable: Throwable) {
         println("${formatTime(epochMillis())} \u001B[31m[KPresence - ERROR]\u001B[0m $message\n${throwable.stackTraceToString()}")
       }
@@ -27,20 +27,24 @@ interface ILogger {
       }
       
       override fun warn(message: String) {
-        println("${formatTime(epochMillis())} \u001B[33m[KPresence - WARN]\u001B[0m $message")
+        if (level.level >= LogLevel.WARN.level) println("${formatTime(epochMillis())} \u001B[33m[KPresence - WARN]\u001B[0m $message")
       }
       
       override fun info(message: String) {
-        println("${formatTime(epochMillis())} \u001B[34m[KPresence - INFO]\u001B[0m $message")
+        if (level.level >= LogLevel.INFO.level) println("${formatTime(epochMillis())} \u001B[34m[KPresence - INFO]\u001B[0m $message")
       }
       
       override fun debug(message: String) {
-        println("${formatTime(epochMillis())} \u001B[36m[KPresence - DEBUG]\u001B[0m $message")
+        if (level.level >= LogLevel.DEBUG.level) println("${formatTime(epochMillis())} \u001B[36m[KPresence - DEBUG]\u001B[0m $message")
       }
       
       override fun trace(message: String) {
-        println("${formatTime(epochMillis())} \u001B[35m[KPresence - TRACE]\u001B[0m $message")
+        if (level.level >= LogLevel.TRACE.level) println("${formatTime(epochMillis())} \u001B[35m[KPresence - TRACE]\u001B[0m $message")
       }
     }
   }
+}
+
+enum class LogLevel(val level: Int) {
+  ERROR(0), WARN(1), INFO(2), DEBUG(3), TRACE(4)
 }
