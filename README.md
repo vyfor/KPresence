@@ -16,7 +16,7 @@
 
 ```gradle
 dependencies {
-    implementation("io.github.vyfor:kpresence:0.5.3")
+    implementation("io.github.vyfor:kpresence:0.6.0")
 }
 ```
 
