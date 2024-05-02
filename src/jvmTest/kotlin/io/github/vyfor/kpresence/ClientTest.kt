@@ -1,7 +1,7 @@
 package io.github.vyfor.kpresence
 
-import io.github.vyfor.kpresence.event.ReadyEvent
 import io.github.vyfor.kpresence.logger.ILogger
+import io.github.vyfor.kpresence.logger.LogLevel
 import io.github.vyfor.kpresence.rpc.*
 import kotlin.random.Random
 import kotlin.test.Test
@@ -10,9 +10,9 @@ class JVMClientTest {
   @Test
   fun testClient() {
     val client = RichClient(1216296290451984424)
-    client.logger = ILogger.default()
+    client.logger = ILogger.default(LogLevel.TRACE)
     
-    client.connect()
+    client.connect(true)
     
     repeat(2) {
       client.update(
