@@ -3,7 +3,6 @@ package io.github.vyfor.kpresence.ipc
 import io.github.vyfor.kpresence.exception.*
 import io.github.vyfor.kpresence.utils.putInt
 import io.github.vyfor.kpresence.utils.reverseBytes
-import java.io.FileNotFoundException
 import java.lang.System.getenv
 import java.net.UnixDomainSocketAddress
 import java.nio.ByteBuffer
@@ -12,6 +11,7 @@ import java.nio.channels.AsynchronousSocketChannel
 import java.nio.file.InvalidPathException
 import java.nio.file.StandardOpenOption
 import kotlin.io.path.Path
+import kotlin.io.path.exists
 
 actual class Connection {
   private val con =
@@ -49,10 +49,10 @@ actual class Connection {
     override fun open() {
       for (i in 0..9) {
         try {
-          pipe = AsynchronousFileChannel.open(Path("\\\\.\\pipe\\discord-ipc-$i"), StandardOpenOption.READ, StandardOpenOption.WRITE)
+          val path = Path("\\\\.\\pipe\\discord-ipc-$i")
+          if (!path.exists()) continue
+          pipe = AsynchronousFileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE)
           return
-          // TODO: exceptions
-        } catch (_: FileNotFoundException) {
         } catch (e: Exception) {
           throw ConnectionException(e)
         }
