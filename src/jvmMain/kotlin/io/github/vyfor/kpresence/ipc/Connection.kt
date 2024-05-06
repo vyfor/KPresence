@@ -4,6 +4,7 @@ import io.github.vyfor.kpresence.exception.*
 import io.github.vyfor.kpresence.utils.putInt
 import io.github.vyfor.kpresence.utils.reverseBytes
 import java.lang.System.getenv
+import java.net.SocketException
 import java.net.UnixDomainSocketAddress
 import java.nio.ByteBuffer
 import java.nio.channels.AsynchronousFileChannel
@@ -118,21 +119,31 @@ actual class Connection {
     private var pipe: SocketChannel? = null
     
     override fun open() {
-      val dir =
-        (getenv("XDG_RUNTIME_DIR") ?:
-         getenv("TMPDIR") ?:
-         getenv("TMP") ?:
-         getenv("TEMP")) ?:
-        "/tmp"
+      val dirs =
+        listOf("XDG_RUNTIME_DIR", "TMPDIR", "TMP", "TEMP")
+          .mapNotNull(::getenv)
+          .plus("/tmp")
+          .flatMap { base ->
+            listOf(
+              base,
+              "$base/app/com.discordapp.Discord",
+              "$base/snap.discord"
+            )
+          }
       
-      for (i in 0..9) {
-        try {
-          pipe = SocketChannel.open(UnixDomainSocketAddress.of("$dir/discord-ipc-$i"))
-          return
-        } catch (_: InvalidPathException) {
-        } catch (_: IllegalArgumentException) {
-        } catch (e: Exception) {
-          throw ConnectionException(e)
+      dirs.forEach { dir ->
+        for (i in 0..9) {
+          try {
+            pipe = SocketChannel.open(UnixDomainSocketAddress.of("$dir/discord-ipc-$i"))
+            return
+          } catch (_: InvalidPathException) {
+          } catch (_: IllegalArgumentException) {
+          } catch (e: SocketException) {
+            if (e.message == "No such file or directory") continue
+            throw ConnectionException(e)
+          } catch (e: Exception) {
+            throw ConnectionException(e)
+          }
         }
       }
       

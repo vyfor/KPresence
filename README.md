@@ -8,6 +8,7 @@
 - Offers DSL support
 - Provides both JVM and Native implementations
 - Validates the activity fields before sending them
+- Supports Flatpak and Snap installations
 
 ## 🔌 Requirements
 - **Java**: `16 or later` (only for use within the JVM environment)
@@ -16,7 +17,7 @@
 
 ```gradle
 dependencies {
-    implementation("io.github.vyfor:kpresence:0.6.0")
+    implementation("io.github.vyfor:kpresence:0.6.1")
 }
 ```
 
