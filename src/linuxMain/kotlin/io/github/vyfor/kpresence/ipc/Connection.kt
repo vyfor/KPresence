@@ -12,12 +12,17 @@ actual class Connection {
   private var pipe = -1
   
   actual fun open() {
-    val dir =
-      (getenv("XDG_RUNTIME_DIR") ?:
-       getenv("TMPDIR") ?:
-       getenv("TMP") ?:
-       getenv("TEMP"))?.toKString() ?:
-      "/tmp"
+    val dirs =
+      listOf("XDG_RUNTIME_DIR", "TMPDIR", "TMP", "TEMP")
+        .mapNotNull { getenv(it)?.toKString() }
+        .plus("/tmp")
+        .flatMap { base ->
+          listOf(
+            base,
+            "$base/app/com.discordapp.Discord",
+            "$base/snap.discord"
+          )
+        }
     
     val socket = socket(AF_UNIX, SOCK_STREAM, 0)
     if (socket == -1) throw ConnectionException(Exception(strerror(errno)?.toKString().orEmpty()))
@@ -27,18 +32,19 @@ actual class Connection {
     if (fcntl(socket, F_SETFL, flags or O_NONBLOCK) == -1) throw ConnectionException(Exception(strerror(errno)?.toKString().orEmpty()))
     
     memScoped {
-      for (i in 0..9) {
-        val pipeAddr = alloc<sockaddr_un>().apply {
-          sun_family = AF_UNIX.convert()
-          snprintf(sun_path, PATH_MAX.toULong(), "$dir/discord-ipc-$i")
-        }
-        
-        val err = connect(socket, pipeAddr.ptr.reinterpret(), sizeOf<sockaddr_un>().convert())
-        if (err == 0) {
-          pipe = socket
-          return
-        } else if (errno != ENOENT) {
-          throw ConnectionException(Exception(strerror(errno)?.toKString().orEmpty()))
+      dirs.forEach { dir ->
+        for (i in 0..9) {
+          val pipeAddr = alloc<sockaddr_un>().apply {
+            sun_family = AF_UNIX.convert()
+            snprintf(sun_path, PATH_MAX.toULong(), "$dir/discord-ipc-$i")
+          }
+          val err = connect(socket, pipeAddr.ptr.reinterpret(), sizeOf<sockaddr_un>().convert())
+          if (err == 0) {
+            pipe = socket
+            return
+          } else if (errno != ENOENT) {
+            throw ConnectionException(Exception(strerror(errno)?.toKString().orEmpty()))
+          }
         }
       }
     }
