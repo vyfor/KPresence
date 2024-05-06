@@ -12,7 +12,7 @@ class PipeNotFoundException : Exception()
  *
  * @param exception The underlying exception that caused the connection issue.
  */
-class ConnectionException(val exception: Exception) : Exception()
+class ConnectionException(val exception: Exception) : Exception(exception)
 
 /**
  * Exception thrown when a connection is unexpectedly closed.
