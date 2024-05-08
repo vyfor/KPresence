@@ -15,7 +15,7 @@ class ClientTest {
       client.logger?.info("Awaiting input (<text>, clear, reconnect, reconnectAsync, shutdown):")
     }.connect(true)
     
-    while (true) {
+    while (client.connectionState != ConnectionState.DISCONNECTED) {
       val input = readln()
       
       if (input == "shutdown") {
@@ -42,10 +42,6 @@ class ClientTest {
         details = input
         state = "KPresence"
       }
-    }
-    
-    if (client.connectionState != ConnectionState.DISCONNECTED) {
-      client.shutdown()
     }
   }
 }
