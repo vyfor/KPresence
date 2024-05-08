@@ -82,6 +82,7 @@ actual class Connection {
     if (bytesWritten < 0) {
       close()
       
+      if (errno == ECONNRESET || errno == ESHUTDOWN) throw ConnectionClosedException(strerror(errno)?.toKString().orEmpty())
       throw PipeWriteException(strerror(errno)?.toKString().orEmpty())
     }
   }
@@ -97,6 +98,7 @@ actual class Connection {
     recv(pipe, bytes.refTo(0), bytes.size.convert(), MSG_DONTWAIT).let { bytesRead ->
       if (bytesRead < 0L) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) return null
+        if (errno == ECONNRESET || errno == ESHUTDOWN) throw ConnectionClosedException(strerror(errno)?.toKString().orEmpty())
         throw PipeReadException(strerror(errno)?.toKString().orEmpty())
       } else if (bytesRead == 0L) {
         close()
