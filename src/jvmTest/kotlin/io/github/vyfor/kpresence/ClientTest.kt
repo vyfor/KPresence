@@ -13,12 +13,12 @@ class JVMClientTest {
     
     client.connect(true)
     
-    repeat(2) {
+    repeat(20) {
       client.update {
         details = Random.nextInt().toString()
         state = "KPresence"
       }
-      Thread.sleep(15000)
+      Thread.sleep(1000)
     }
     
     client.shutdown()
