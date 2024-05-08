@@ -15,7 +15,7 @@ class ClientTest {
       client.logger?.info("Awaiting input (<text>, clear, reconnect, reconnectAsync, shutdown):")
     }.connect(true)
     
-    while (client.connectionState != ConnectionState.DISCONNECTED) {
+    while (true) {
       val input = readln()
       
       if (input == "shutdown") {
@@ -32,6 +32,8 @@ class ClientTest {
         client.reconnect(false)
         continue
       }
+      
+      if (client.connectionState == ConnectionState.DISCONNECTED) break
       
       if (input == "clear") {
         client.clear()
