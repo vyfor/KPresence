@@ -58,7 +58,14 @@ actual class Connection {
         WriteFile(handle, it.addressOf(0), buffer.size.convert(), null, null)
       }
       
-      if (success == FALSE) throw PipeWriteException(formatError(GetLastError()))
+      if (success == FALSE) {
+        val err = GetLastError()
+        
+        if (err.toInt() == ERROR_BROKEN_PIPE) {
+          throw ConnectionClosedException(formatError(err))
+        }
+        throw PipeWriteException(formatError(err))
+      }
     } ?: throw NotConnectedException()
   }
   
@@ -80,7 +87,12 @@ actual class Connection {
     )
     
     if (result == FALSE) {
-      throw PipeReadException(formatError(GetLastError()))
+      val err = GetLastError()
+      
+      if (err.toInt() == ERROR_BROKEN_PIPE) {
+        throw ConnectionClosedException(formatError(err))
+      }
+      throw PipeReadException(formatError(err))
     }
     if (bytesAvailable.value == 0u) {
       return null
@@ -89,9 +101,14 @@ actual class Connection {
     val bytes = ByteArray(size)
     val bytesRead = alloc<UIntVar>()
     bytes.usePinned { pinnedBytes ->
-      ReadFile(pipe, pinnedBytes.addressOf (0), size.convert(), bytesRead.ptr, null).let { success ->
+      ReadFile(pipe, pinnedBytes.addressOf(0), size.convert(), bytesRead.ptr, null).let { success ->
         if (success == FALSE) {
-          throw PipeReadException(formatError(GetLastError()))
+          val err = GetLastError()
+          
+          if (err.toInt() == ERROR_BROKEN_PIPE) {
+            throw ConnectionClosedException(formatError(err))
+          }
+          throw PipeReadException(formatError(err))
         }
       }
     }

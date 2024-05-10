@@ -33,6 +33,8 @@ class ClientTest {
         continue
       }
       
+      if (client.connectionState == ConnectionState.DISCONNECTED) break
+      
       if (input == "clear") {
         client.clear()
         continue
@@ -42,10 +44,6 @@ class ClientTest {
         details = input
         state = "KPresence"
       }
-    }
-    
-    if (client.connectionState != ConnectionState.DISCONNECTED) {
-      client.shutdown()
     }
   }
 }

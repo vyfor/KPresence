@@ -15,6 +15,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlin.concurrent.Volatile
 
 /**
  * Manages client connections and activity updates for Discord presence.
@@ -28,6 +29,7 @@ class RichClient(
   private var signal = Mutex(true)
   private var lastActivity: Activity? = null
   
+  @Volatile
   var connectionState = ConnectionState.DISCONNECTED
     private set
   var onReady: (RichClient.() -> Unit)? = null
@@ -143,7 +145,7 @@ class RichClient(
       return this
     }
     
-    connection.write(2, null)
+    write(2, null)
     connectionState = ConnectionState.DISCONNECTED
     connection.close()
     lastActivity = null
@@ -186,17 +188,17 @@ class RichClient(
       debug(packet)
     }
     
-    connection.write(1, packet)
+    write(1, packet)
   }
   
   private fun handshake() {
-    connection.write(0, "{\"v\": 1,\"client_id\":\"$clientId\"}")
+    write(0, "{\"v\": 1,\"client_id\":\"$clientId\"}")
   }
   
   private fun listen(): Job {
     return coroutineScope.launch {
       while (isActive && connectionState != ConnectionState.DISCONNECTED) {
-        val response = connection.read() ?: continue
+        val response = read() ?: if (connectionState == ConnectionState.DISCONNECTED) break else continue
         logger?.apply {
           trace("Received response:")
           trace("Message(opcode: ${response.opcode}, data: ${response.data.decodeToString()})")
@@ -225,11 +227,36 @@ class RichClient(
               lastActivity = null
               logger?.warn("The connection was forcibly closed")
               onDisconnect?.invoke(this@RichClient)
-              break
             }
+            break
           }
         }
       }
+    }
+  }
+  
+  private fun read(): Message? {
+    return try {
+      connection.read()
+    } catch (e: ConnectionClosedException) {
+      connectionState = ConnectionState.DISCONNECTED
+      logger?.warn("The connection was forcibly closed: ${e.message?.trimEnd()}. Client will be disconnected")
+      connection.close()
+      lastActivity = null
+      onDisconnect?.invoke(this@RichClient)
+      null
+    }
+  }
+  
+  private fun write(opcode: Int, data: String?) {
+    try {
+      connection.write(opcode, data)
+    } catch (e: ConnectionClosedException) {
+      connectionState = ConnectionState.DISCONNECTED
+      logger?.warn("The connection was forcibly closed: ${e.message?.trimEnd()}. Client will be disconnected")
+      connection.close()
+      lastActivity = null
+      onDisconnect?.invoke(this@RichClient)
     }
   }
 }
