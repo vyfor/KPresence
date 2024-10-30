@@ -107,7 +107,7 @@ actual class Connection {
 
             stream.write(ByteBuffer.wrap(buffer), 0).get()
           } catch (e: ExecutionException) {
-            throw (e.cause ?: throw PipeReadException(e.message.orEmpty()))
+            throw (e.cause ?: throw PipeWriteException(e.message.orEmpty()))
           }
         } catch (e: AsynchronousCloseException) {
           return
