@@ -13,7 +13,7 @@ plugins {
 }
 
 group = "io.github.vyfor"
-version = "0.6.2"
+version = "0.6.3"
 
 repositories {
     mavenCentral()
