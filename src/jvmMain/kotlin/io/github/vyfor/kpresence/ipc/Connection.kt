@@ -3,7 +3,6 @@ package io.github.vyfor.kpresence.ipc
 import io.github.vyfor.kpresence.exception.*
 import io.github.vyfor.kpresence.utils.putInt
 import io.github.vyfor.kpresence.utils.reverseBytes
-import java.io.IOException
 import java.lang.System.getenv
 import java.net.SocketException
 import java.net.UnixDomainSocketAddress
@@ -14,6 +13,7 @@ import java.nio.channels.ClosedChannelException
 import java.nio.channels.SocketChannel
 import java.nio.file.InvalidPathException
 import java.nio.file.StandardOpenOption
+import java.util.concurrent.ExecutionException
 import kotlin.io.path.Path
 import kotlin.io.path.exists
 
@@ -68,15 +68,19 @@ actual class Connection {
     override fun read(): Message? {
       pipe?.let { stream ->
         try {
-          val opcode = stream.readInt(0).reverseBytes()
-          val length = stream.readInt(4).reverseBytes()
-          val buffer = ByteBuffer.allocate(length)
-          
-          stream.read(buffer, 8).get()
-          return Message(
-            opcode,
-            buffer.array()
-          )
+          try {
+            val opcode = stream.readInt(0).reverseBytes()
+            val length = stream.readInt(4).reverseBytes()
+            val buffer = ByteBuffer.allocate(length)
+
+            stream.read(buffer, 8).get()
+            return Message(
+              opcode,
+              buffer.array()
+            )
+          } catch (e: ExecutionException) {
+            throw (e.cause ?: throw PipeReadException(e.message.orEmpty()))
+          }
         } catch (e: AsynchronousCloseException) {
           return null
         } catch (e: ClosedChannelException) {
@@ -91,16 +95,20 @@ actual class Connection {
     override fun write(opcode: Int, data: String?) {
       pipe?.let { stream ->
         try {
-          val bytes = data?.encodeToByteArray()
-          val buffer = ByteArray((bytes?.size ?: 0) + 8)
+          try {
+            val bytes = data?.encodeToByteArray()
+            val buffer = ByteArray((bytes?.size ?: 0) + 8)
 
-          buffer.putInt(opcode.reverseBytes())
-          if (bytes != null) {
-            buffer.putInt(bytes.size.reverseBytes(), 4)
-            bytes.copyInto(buffer, 8)
+            buffer.putInt(opcode.reverseBytes())
+            if (bytes != null) {
+              buffer.putInt(bytes.size.reverseBytes(), 4)
+              bytes.copyInto(buffer, 8)
+            }
+
+            stream.write(ByteBuffer.wrap(buffer), 0).get()
+          } catch (e: ExecutionException) {
+            throw (e.cause ?: throw PipeReadException(e.message.orEmpty()))
           }
-
-          stream.write(ByteBuffer.wrap(buffer), 0).get()
         } catch (e: AsynchronousCloseException) {
           return
         } catch (e: ClosedChannelException) {
