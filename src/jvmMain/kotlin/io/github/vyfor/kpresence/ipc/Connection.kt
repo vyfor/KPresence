@@ -155,12 +155,13 @@ actual class Connection {
       dirs.forEach { dir ->
         for (i in 0..9) {
           try {
-            pipe = SocketChannel.open(UnixDomainSocketAddress.of("$dir/discord-ipc-$i"))
+            val path = Path("$dir/discord-ipc-$i")
+            if (!path.exists()) continue
+            pipe = SocketChannel.open(UnixDomainSocketAddress.of(path))
             return
           } catch (_: InvalidPathException) {
           } catch (_: IllegalArgumentException) {
           } catch (e: SocketException) {
-            if (e.message == "No such file or directory") continue
             throw ConnectionException(e)
           } catch (e: Exception) {
             throw ConnectionException(e)
