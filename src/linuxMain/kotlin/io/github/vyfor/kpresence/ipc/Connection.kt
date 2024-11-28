@@ -20,6 +20,7 @@ actual class Connection {
           listOf(
             base,
             "$base/app/com.discordapp.Discord",
+            "$base/.flatpak/com.discordapp.Discord",
             "$base/snap.discord"
           )
         }
