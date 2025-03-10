@@ -2,9 +2,7 @@
 
 package io.github.vyfor.kpresence.exception
 
-/**
- * Exception thrown when a pipe does not exist.
- */
+/** Exception thrown when a pipe does not exist. */
 class PipeNotFoundException : Exception()
 
 /**
@@ -28,9 +26,7 @@ class ConnectionClosedException(message: String) : Exception(message)
  */
 class InvalidClientIdException(message: String) : Exception(message)
 
-/**
- * Exception thrown when trying to perform an operation without connecting to Discord.
- */
+/** Exception thrown when trying to perform an operation without connecting to Discord. */
 class NotConnectedException : Exception("The connection has not yet been established")
 
 /**

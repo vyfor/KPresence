@@ -12,12 +12,11 @@ class ClientTest {
     client.logger = ILogger.default(LogLevel.TRACE)
 
     client
-            .on<ReadyEvent> {
-              client.logger?.info(
-                      "Awaiting input (<text>, clear, reconnect, reconnectAsync, shutdown):"
-              )
-            }
-            .connect(true)
+        .on<ReadyEvent> {
+          client.logger?.info(
+              "Awaiting input (<text>, clear, reconnect, reconnectAsync, shutdown):")
+        }
+        .connect(true)
 
     while (true) {
       val input = readln()

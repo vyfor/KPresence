@@ -15,15 +15,14 @@ actual class Connection {
       for (i in 0..9) {
         val fullPath = "$basePath\\discord-ipc-$i"
         val pipeHandle =
-                CreateFileW(
-                        fullPath,
-                        GENERIC_READ or GENERIC_WRITE.convert(),
-                        0u,
-                        null,
-                        OPEN_EXISTING.convert(),
-                        FILE_FLAG_OVERLAPPED.convert(),
-                        null
-                )
+            CreateFileW(
+                fullPath,
+                GENERIC_READ or GENERIC_WRITE.convert(),
+                0u,
+                null,
+                OPEN_EXISTING.convert(),
+                FILE_FLAG_OVERLAPPED.convert(),
+                null)
 
         if (pipeHandle == INVALID_HANDLE_VALUE) {
           val err = GetLastError()
@@ -46,8 +45,7 @@ actual class Connection {
       val (buffer) = readBytes(length) ?: return@memScoped null
 
       return Message(opcode, buffer)
-    }
-            ?: throw NotConnectedException()
+    } ?: throw NotConnectedException()
   }
 
   actual fun write(opcode: Int, data: String?) {
@@ -64,9 +62,7 @@ actual class Connection {
       }
 
       val success =
-              buffer.usePinned {
-                WriteFile(handle, it.addressOf(0), buffer.size.convert(), null, null)
-              }
+          buffer.usePinned { WriteFile(handle, it.addressOf(0), buffer.size.convert(), null, null) }
 
       if (success == FALSE) {
         val err = GetLastError()
@@ -76,8 +72,7 @@ actual class Connection {
         }
         throw PipeWriteException(formatError(err))
       }
-    }
-            ?: throw NotConnectedException()
+    } ?: throw NotConnectedException()
   }
 
   actual fun close() {
@@ -124,17 +119,16 @@ actual class Connection {
   private fun formatError(err: DWORD) = memScoped {
     val errMessage = ByteArray(1024)
     val result =
-            errMessage.usePinned { pinnedErrMessage ->
-              FormatMessageA(
-                      FORMAT_MESSAGE_FROM_SYSTEM.toUInt() or FORMAT_MESSAGE_IGNORE_INSERTS.toUInt(),
-                      null,
-                      err,
-                      0u,
-                      pinnedErrMessage.addressOf(0),
-                      errMessage.size.convert(),
-                      null
-              )
-            }
+        errMessage.usePinned { pinnedErrMessage ->
+          FormatMessageA(
+              FORMAT_MESSAGE_FROM_SYSTEM.toUInt() or FORMAT_MESSAGE_IGNORE_INSERTS.toUInt(),
+              null,
+              err,
+              0u,
+              pinnedErrMessage.addressOf(0),
+              errMessage.size.convert(),
+              null)
+        }
     if (result != 0u) errMessage.decodeToString() else "Error code: $err"
   }
 }

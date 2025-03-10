@@ -18,8 +18,8 @@ import kotlin.io.path.exists
 
 actual class Connection {
   private val con =
-          if (System.getProperty("os.name").lowercase().startsWith("windows")) WindowsConnection()
-          else UnixConnection()
+      if (System.getProperty("os.name").lowercase().startsWith("windows")) WindowsConnection()
+      else UnixConnection()
 
   actual fun open(paths: List<String>) {
     con.open(paths)
@@ -39,8 +39,11 @@ actual class Connection {
 
   interface IConnection {
     fun open(paths: List<String>)
+
     fun read(): Message?
+
     fun write(opcode: Int, data: String?)
+
     fun close()
   }
 
@@ -55,11 +58,8 @@ actual class Connection {
             val pathObj = Path(fullPath)
             if (!pathObj.exists()) continue
             pipe =
-                    AsynchronousFileChannel.open(
-                            pathObj,
-                            StandardOpenOption.READ,
-                            StandardOpenOption.WRITE
-                    )
+                AsynchronousFileChannel.open(
+                    pathObj, StandardOpenOption.READ, StandardOpenOption.WRITE)
             return
           } catch (e: Exception) {
             throw ConnectionException(e)
@@ -89,11 +89,10 @@ actual class Connection {
           throw ConnectionClosedException(e.message.orEmpty())
         } catch (e: Exception) {
           if (e.cause?.message == "The pipe has been ended")
-                  throw ConnectionClosedException(e.message.orEmpty())
+              throw ConnectionClosedException(e.message.orEmpty())
           throw PipeReadException(e.message.orEmpty())
         }
-      }
-              ?: throw NotConnectedException()
+      } ?: throw NotConnectedException()
     }
 
     override fun write(opcode: Int, data: String?) {
@@ -119,11 +118,10 @@ actual class Connection {
           throw ConnectionClosedException(e.message.orEmpty())
         } catch (e: Exception) {
           if (e.cause?.message == "The pipe is being closed")
-                  throw ConnectionClosedException(e.message.orEmpty())
+              throw ConnectionClosedException(e.message.orEmpty())
           throw PipeWriteException(e.message.orEmpty())
         }
-      }
-              ?: throw NotConnectedException()
+      } ?: throw NotConnectedException()
     }
 
     override fun close() {
@@ -136,10 +134,10 @@ actual class Connection {
 
       read(buffer, offset).get()
       return ((buffer[0].toUInt() shl 24) +
-                      (buffer[1].toUInt() shl 16) +
-                      (buffer[2].toUInt() shl 8) +
-                      buffer[3].toUInt() shl 0)
-              .toInt()
+              (buffer[1].toUInt() shl 16) +
+              (buffer[2].toUInt() shl 8) +
+              buffer[3].toUInt() shl 0)
+          .toInt()
     }
   }
 
@@ -156,7 +154,7 @@ actual class Connection {
             pipe = SocketChannel.open(UnixDomainSocketAddress.of(pathObj))
             return
           } catch (_: InvalidPathException) {} catch (_: IllegalArgumentException) {} catch (
-                  e: SocketException) {
+              e: SocketException) {
             throw ConnectionException(e)
           } catch (e: Exception) {
             throw ConnectionException(e)
@@ -191,8 +189,7 @@ actual class Connection {
           if (e.message == "Broken pipe") throw ConnectionClosedException(e.message.orEmpty())
           throw PipeReadException(e.message.orEmpty())
         }
-      }
-              ?: throw NotConnectedException()
+      } ?: throw NotConnectedException()
     }
 
     override fun write(opcode: Int, data: String?) {
@@ -221,8 +218,7 @@ actual class Connection {
           if (e.message == "Broken pipe") throw ConnectionClosedException(e.message.orEmpty())
           throw PipeWriteException(e.message.orEmpty())
         }
-      }
-              ?: throw NotConnectedException()
+      } ?: throw NotConnectedException()
     }
 
     override fun close() {
@@ -237,10 +233,10 @@ actual class Connection {
       if (bytesRead == 0) throw ConnectionClosedException("The pipe has been closed")
 
       return ((buffer[0].toUInt() shl 24) +
-                      (buffer[1].toUInt() shl 16) +
-                      (buffer[2].toUInt() shl 8) +
-                      buffer[3].toUInt() shl 0)
-              .toInt()
+              (buffer[1].toUInt() shl 16) +
+              (buffer[2].toUInt() shl 8) +
+              buffer[3].toUInt() shl 0)
+          .toInt()
     }
   }
 }

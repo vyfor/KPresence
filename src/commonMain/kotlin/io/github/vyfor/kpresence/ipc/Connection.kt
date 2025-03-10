@@ -4,8 +4,11 @@ package io.github.vyfor.kpresence.ipc
 
 expect class Connection() {
   fun open(paths: List<String>)
+
   fun read(): Message?
+
   fun write(opcode: Int, data: String?)
+
   fun close()
 }
 

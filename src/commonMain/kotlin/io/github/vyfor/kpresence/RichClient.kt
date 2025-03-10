@@ -19,17 +19,19 @@ import kotlinx.serialization.json.Json
 
 /**
  * Gets the default base paths for Discord IPC on the current platform.
+ *
  * @return A mutable list of default base paths.
  */
 expect fun getDefaultPaths(): MutableList<String>
 
 /**
  * Manages client connections and activity updates for Discord presence.
+ *
  * @property clientId The Discord application client ID.
  */
 class RichClient(
-        var clientId: Long,
-        val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.IO)
+    var clientId: Long,
+    val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.IO)
 ) {
   private val connection = Connection()
   private var signal = Mutex(true)
@@ -46,6 +48,7 @@ class RichClient(
   @Volatile
   var connectionState = ConnectionState.DISCONNECTED
     private set
+
   var onReady: (RichClient.() -> Unit)? = null
   var onDisconnect: (RichClient.() -> Unit)? = null
   var onActivityUpdate: (RichClient.() -> Unit)? = null
@@ -53,6 +56,7 @@ class RichClient(
 
   /**
    * Allows customization of the Discord IPC paths.
+   *
    * @param block A lambda that receives the mutable list of paths and can modify it.
    * @return The current [RichClient] instance for chaining.
    */
@@ -64,6 +68,7 @@ class RichClient(
 
   /**
    * Establishes a connection to Discord.
+   *
    * @param shouldBlock Whether to block the current thread until the connection is established.
    * @return The current [RichClient] instance for chaining.
    * @throws InvalidClientIdException if the provided client ID is not valid.
@@ -91,6 +96,7 @@ class RichClient(
 
   /**
    * Attempts to reconnect if there is an already active connection.
+   *
    * @param shouldBlock Whether to block the current thread until the connection is established.
    * @return The current [RichClient] instance for chaining.
    * @throws InvalidClientIdException if the provided client ID is not valid.
@@ -111,6 +117,7 @@ class RichClient(
 
   /**
    * Updates the current activity shown on Discord. Skips identical presence updates.
+   *
    * @param activity The activity to display.
    * @return The current [RichClient] instance for chaining.
    * @throws NotConnectedException if the client is not connected to Discord.
@@ -126,6 +133,7 @@ class RichClient(
 
   /**
    * Updates the current activity shown on Discord. Skips identical presence updates.
+   *
    * @param activityBlock A lambda to construct an [Activity].
    * @return The current [RichClient] instance for chaining.
    * @throws NotConnectedException if the client is not connected to Discord.
@@ -141,6 +149,7 @@ class RichClient(
 
   /**
    * Clears the current activity shown on Discord.
+   *
    * @return The current [RichClient] instance for chaining.
    * @throws NotConnectedException if the client is not connected to Discord.
    * @throws PipeReadException if an error occurs while reading from the IPC pipe.
@@ -158,6 +167,7 @@ class RichClient(
 
   /**
    * Shuts down the connection to Discord and cleans up resources.
+   *
    * @return The current [RichClient] instance for chaining.
    */
   fun shutdown(): RichClient {
@@ -178,6 +188,7 @@ class RichClient(
 
   /**
    * Registers a callback function for the specified event.
+   *
    * @param T The type of [Event].
    * @param block The callback function to be executed when the event is triggered.
    * @return The current [RichClient] instance for chaining.
@@ -204,9 +215,7 @@ class RichClient(
     lastActivity = currentActivity
 
     val packet =
-            Json.encodeToString(
-                    Packet("SET_ACTIVITY", PacketArgs(getProcessId(), lastActivity), "-")
-            )
+        Json.encodeToString(Packet("SET_ACTIVITY", PacketArgs(getProcessId(), lastActivity), "-"))
     logger?.apply {
       debug("Sending presence update with payload:")
       debug(packet)
@@ -223,7 +232,7 @@ class RichClient(
     return coroutineScope.launch {
       while (isActive && connectionState != ConnectionState.DISCONNECTED) {
         val response =
-                read() ?: if (connectionState == ConnectionState.DISCONNECTED) break else continue
+            read() ?: if (connectionState == ConnectionState.DISCONNECTED) break else continue
         logger?.apply {
           trace("Received response:")
           trace("Message(opcode: ${response.opcode}, data: ${response.data.decodeToString()})")
@@ -270,8 +279,7 @@ class RichClient(
     } catch (e: ConnectionClosedException) {
       connectionState = ConnectionState.DISCONNECTED
       logger?.warn(
-              "The connection was forcibly closed: ${e.message?.trimEnd()}. Client will be disconnected"
-      )
+          "The connection was forcibly closed: ${e.message?.trimEnd()}. Client will be disconnected")
       connection.close()
       lastActivity = null
       onDisconnect?.invoke(this@RichClient)
@@ -285,8 +293,7 @@ class RichClient(
     } catch (e: ConnectionClosedException) {
       connectionState = ConnectionState.DISCONNECTED
       logger?.warn(
-              "The connection was forcibly closed: ${e.message?.trimEnd()}. Client will be disconnected"
-      )
+          "The connection was forcibly closed: ${e.message?.trimEnd()}. Client will be disconnected")
       connection.close()
       lastActivity = null
       onDisconnect?.invoke(this@RichClient)

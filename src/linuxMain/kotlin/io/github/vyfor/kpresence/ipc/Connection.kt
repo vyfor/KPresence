@@ -18,17 +18,17 @@ actual class Connection {
     val flags = fcntl(socket, F_GETFL, 0)
     if (flags == -1) throw ConnectionException(Exception(strerror(errno)?.toKString().orEmpty()))
     if (fcntl(socket, F_SETFL, flags or O_NONBLOCK) == -1)
-            throw ConnectionException(Exception(strerror(errno)?.toKString().orEmpty()))
+        throw ConnectionException(Exception(strerror(errno)?.toKString().orEmpty()))
 
     memScoped {
       for (basePath in paths) {
         for (i in 0..9) {
           val fullPath = "$basePath/discord-ipc-$i"
           val pipeAddr =
-                  alloc<sockaddr_un>().apply {
-                    sun_family = AF_UNIX.convert()
-                    snprintf(sun_path, PATH_MAX.toULong(), fullPath)
-                  }
+              alloc<sockaddr_un>().apply {
+                sun_family = AF_UNIX.convert()
+                snprintf(sun_path, PATH_MAX.toULong(), fullPath)
+              }
           val err = connect(socket, pipeAddr.ptr.reinterpret(), sizeOf<sockaddr_un>().convert())
           if (err == 0) {
             pipe = socket
@@ -71,7 +71,7 @@ actual class Connection {
       close()
 
       if (errno == ECONNRESET || errno == ESHUTDOWN)
-              throw ConnectionClosedException(strerror(errno)?.toKString().orEmpty())
+          throw ConnectionClosedException(strerror(errno)?.toKString().orEmpty())
       throw PipeWriteException(strerror(errno)?.toKString().orEmpty())
     }
   }
@@ -88,7 +88,7 @@ actual class Connection {
       if (bytesRead < 0L) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) return null
         if (errno == ECONNRESET || errno == ESHUTDOWN)
-                throw ConnectionClosedException(strerror(errno)?.toKString().orEmpty())
+            throw ConnectionClosedException(strerror(errno)?.toKString().orEmpty())
         throw PipeReadException(strerror(errno)?.toKString().orEmpty())
       } else if (bytesRead == 0L) {
         close()
