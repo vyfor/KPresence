@@ -8,11 +8,11 @@ import kotlin.test.Test
 class JVMClientTest {
   @Test
   fun testClient() {
-    val client = RichClient(1216296290451984424)
+    val client = RichClient(1219918880005165137)
     client.logger = ILogger.default(LogLevel.TRACE)
-    
+
     client.connect(true)
-    
+
     repeat(20) {
       client.update {
         details = Random.nextInt().toString()
@@ -20,7 +20,7 @@ class JVMClientTest {
       }
       Thread.sleep(1000)
     }
-    
+
     client.shutdown()
   }
 }
