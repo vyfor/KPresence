@@ -20,14 +20,23 @@ class ActivityBuilder {
   /** Activity type. Defaults to [ActivityType.GAME]. */
   var type: ActivityType = ActivityType.GAME
 
+  /** Controls which field is displayed in the user's status text. */
+  var statusDisplayType: StatusDisplayType = StatusDisplayType.NAME
+
   /** Unix timestamps for start/end of the game. */
   var timestamps: ActivityTimestamps? = null
 
   /** What the player is currently doing (First line). */
   var details: String? = null
 
+  /** URL of the details field. */
+  var detailsUrl: String? = null
+
   /** User's current party status (Second line). */
   var state: String? = null
+
+  /** URL of the state field. */
+  var stateUrl: String? = null
 
   /** Information for the current party of the player. */
   var party: ActivityParty? = null
@@ -95,16 +104,20 @@ class ActivityBuilder {
    * @return The constructed Activity instance.
    */
   fun build(): Activity =
-      Activity(
-          type,
-          timestamps,
-          details,
-          state,
-          party,
-          assets,
-          secrets,
-          instance,
-          buttons.takeIf { it.isNotEmpty() }?.toTypedArray())
+          Activity(
+                  type,
+                  statusDisplayType,
+                  timestamps,
+                  details,
+                  detailsUrl,
+                  state,
+                  stateUrl,
+                  party,
+                  assets,
+                  secrets,
+                  instance,
+                  buttons.takeIf { it.isNotEmpty() }?.toTypedArray()
+          )
 }
 
 /** Builder class for constructing ActivityTimestamps instances. */
@@ -153,7 +166,8 @@ class ActivityPartyBuilder {
    */
   fun build(): ActivityParty {
     val sizeArray =
-        if (currentSize != null && maxSize != null) intArrayOf(currentSize!!, maxSize!!) else null
+            if (currentSize != null && maxSize != null) intArrayOf(currentSize!!, maxSize!!)
+            else null
     return ActivityParty(id, sizeArray)
   }
 }
@@ -167,18 +181,24 @@ class ActivityAssetsBuilder {
   /** Text displayed when hovering over the large image of the activity. */
   var largeText: String? = null
 
+  /** URL of the large image. */
+  var largeUrl: String? = null
+
   /** ID of the small image, or a URL. */
   var smallImage: String? = null
 
   /** Text displayed when hovering over the small image of the activity. */
   var smallText: String? = null
 
+  /** URL of the small image. */
+  var smallUrl: String? = null
+
   /**
    * Builds the configured ActivityAssets instance.
    *
    * @return The constructed ActivityAssets instance.
    */
-  fun build(): ActivityAssets = ActivityAssets(largeImage, largeText, smallImage, smallText)
+  fun build(): ActivityAssets = ActivityAssets(largeImage, largeText, largeUrl, smallImage, smallText, smallUrl)
 }
 
 /** Builder class for constructing ActivitySecrets instances. */

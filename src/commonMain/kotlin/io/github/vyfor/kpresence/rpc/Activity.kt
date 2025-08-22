@@ -14,9 +14,12 @@ import kotlinx.serialization.encoding.Encoder
  * Represents a user's activity on Discord. Most fields have a maximum length of 128 characters.
  *
  * @property type Activity type.
+ * @property statusDisplayType Controls which field is displayed in the user's status text.
  * @property timestamps Unix timestamps for start and/or end of the game.
  * @property details What the player is currently doing.
+ * @property detailsUrl URL that is linked when clicking on the details text.
  * @property state User's current party status, or text used for a custom status.
+ * @property stateUrl URL that is linked when clicking on the state text.
  * @property party Information for the current party of the player.
  * @property assets Images for the presence and their hover texts.
  * @property secrets Secrets for Rich Presence joining and spectating.
@@ -25,22 +28,31 @@ import kotlinx.serialization.encoding.Encoder
  */
 @Serializable
 data class Activity(
-    val type: ActivityType = ActivityType.GAME,
-    val timestamps: ActivityTimestamps? = null,
-    val details: String? = null,
-    val state: String? = null,
-    val party: ActivityParty? = null,
-    val assets: ActivityAssets? = null,
-    val secrets: ActivitySecrets? = null,
-    val instance: Boolean? = null,
-    val buttons: Array<ActivityButton>? = null
+        val type: ActivityType = ActivityType.GAME,
+        @SerialName("status_display_type") val statusDisplayType: StatusDisplayType = StatusDisplayType.NAME,
+        val timestamps: ActivityTimestamps? = null,
+        val details: String? = null,
+        @SerialName("details_url") val detailsUrl: String? = null,
+        val state: String? = null,
+        @SerialName("state_url") val stateUrl: String? = null,
+        val party: ActivityParty? = null,
+        val assets: ActivityAssets? = null,
+        val secrets: ActivitySecrets? = null,
+        val instance: Boolean? = null,
+        val buttons: Array<ActivityButton>? = null
 ) {
   init {
     require(details == null || details.length in 2..128) {
       "Details must be between 2 and 128 characters."
     }
+    require(detailsUrl == null || detailsUrl.length in 2..256) {
+      "Details URL must be between 2 and 256 characters."
+    }
     require(state == null || state.length in 2..128) {
       "State must be between 2 and 128 characters."
+    }
+    require(stateUrl == null || stateUrl.length in 2..256) {
+      "State URL must be between 2 and 256 characters."
     }
     require(buttons == null || buttons.size <= 2) {
       "Buttons have a maximum size of 2, received ${buttons?.size}."
@@ -54,6 +66,15 @@ enum class ActivityType(val value: Short) {
   GAME(0),
   LISTENING(2),
   WATCHING(3),
+  COMPETING(5),
+}
+
+/** Controls which field is displayed in the user's status text. */
+@Serializable(StatusDisplayTypeSerializer::class)
+enum class StatusDisplayType(val value: Short) {
+  NAME(0),
+  STATE(1),
+  DETAILS(2),
 }
 
 /**
@@ -63,13 +84,7 @@ enum class ActivityType(val value: Short) {
  * @property end Unix time (in milliseconds) of when the activity ends.
  */
 @Serializable
-data class ActivityTimestamps(val start: Long? = null, val end: Long? = null) {
-  init {
-    require(!(start != null && end != null)) {
-      "Only one of start or end timestamps should be provided, not both."
-    }
-  }
-}
+data class ActivityTimestamps(val start: Long? = null, val end: Long? = null) {}
 
 /**
  * Represents the party for an activity.
@@ -93,15 +108,19 @@ data class ActivityParty(val id: String? = null, val size: IntArray? = null) {
  *
  * @property largeImage ID of the large image, or a URL.
  * @property largeText Text displayed when hovering over the large image of the activity.
+ * @property largeUrl URL of the large image.
  * @property smallImage ID of the small image, or a URL.
  * @property smallText Text displayed when hovering over the small image of the activity.
+ * @property smallUrl URL of the small image.
  */
 @Serializable
 data class ActivityAssets(
-    @SerialName("large_image") val largeImage: String? = null,
-    @SerialName("large_text") val largeText: String? = null,
-    @SerialName("small_image") val smallImage: String? = null,
-    @SerialName("small_text") val smallText: String? = null
+        @SerialName("large_image") val largeImage: String? = null,
+        @SerialName("large_text") val largeText: String? = null,
+        @SerialName("large_url") val largeUrl: String? = null,
+        @SerialName("small_image") val smallImage: String? = null,
+        @SerialName("small_text") val smallText: String? = null,
+        @SerialName("small_url") val smallUrl: String? = null
 ) {
   init {
     require(largeImage == null || largeImage.length in 2..256) {
@@ -110,11 +129,17 @@ data class ActivityAssets(
     require(largeText == null || largeText.length in 2..128) {
       "Large text must be between 2 and 128 characters."
     }
+    require(largeUrl == null || largeUrl.length in 2..256) {
+      "Large URL must be between 2 and 256 characters."
+    }
     require(smallImage == null || smallImage.length in 2..256) {
       "Small image must be between 2 and 256 characters."
     }
     require(smallText == null || smallText.length in 2..128) {
       "Small text must be between 2 and 128 characters."
+    }
+    require(smallUrl == null || smallUrl.length in 2..256) {
+      "Small URL must be between 2 and 256 characters."
     }
   }
 }
@@ -128,9 +153,9 @@ data class ActivityAssets(
  */
 @Serializable
 data class ActivitySecrets(
-    val join: String? = null,
-    val spectate: String? = null,
-    val match: String? = null
+        val join: String? = null,
+        val spectate: String? = null,
+        val match: String? = null
 ) {
   init {
     require(join == null || join.length in 2..128) {
@@ -169,5 +194,17 @@ private object ActivityTypeSerializer : KSerializer<ActivityType> {
 
   override fun deserialize(decoder: Decoder): ActivityType {
     return ActivityType.entries.first { it.value == decoder.decodeShort() }
+  }
+}
+
+private object StatusDisplayTypeSerializer : KSerializer<StatusDisplayType> {
+  override val descriptor = PrimitiveSerialDescriptor("StatusDisplayType", PrimitiveKind.SHORT)
+
+  override fun serialize(encoder: Encoder, value: StatusDisplayType) {
+    encoder.encodeShort(value.value)
+  }
+
+  override fun deserialize(decoder: Decoder): StatusDisplayType {
+    return StatusDisplayType.entries.first { it.value == decoder.decodeShort() }
   }
 }
